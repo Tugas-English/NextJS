@@ -20,6 +20,7 @@ import {
     LineChart,
     Newspaper,
     Clock,
+    BrainCircuit,
 } from "lucide-react";
 
 import {
@@ -254,7 +255,7 @@ export function TeacherSidebar({
                                 className='flex items-center gap-2'
                             >
                                 <div className='bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex aspect-square size-9 items-center justify-center rounded-lg shadow-sm'>
-                                    <ClipboardList className='size-5' />
+                                    <BrainCircuit className='size-5' />
                                 </div>
                                 <div className='grid flex-1 text-left text-sm leading-tight'>
                                     <span className='text-base font-semibold'>
