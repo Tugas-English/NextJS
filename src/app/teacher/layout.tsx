@@ -38,7 +38,6 @@ function getBreadcrumbItems(path: string): { label: string; href: string }[] {
 
         let label = segment.charAt(0).toUpperCase() + segment.slice(0);
 
-        // Handle special cases
         if (segment === "create" && index > 0) {
             const parentSegment = segments[index - 1];
             label = `Create ${

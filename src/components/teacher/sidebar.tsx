@@ -1,9 +1,9 @@
+// src/components/teacher/sidebar.tsx
 "use client";
 
 import * as React from "react";
 import {
     BookOpen,
-    ClipboardList,
     Users,
     FileText,
     Activity,
@@ -21,6 +21,9 @@ import {
     Newspaper,
     Clock,
     BrainCircuit,
+    ClipboardList,
+    Gauge,
+    FileOutput,
 } from "lucide-react";
 
 import {
@@ -73,13 +76,13 @@ const data = {
             isActive: true,
         },
         {
-            title: "Activities",
+            title: "Aktivitas HOTS",
             url: "/teacher/activities",
             icon: Activity,
             badge: "124",
             items: [
                 {
-                    title: "Create New",
+                    title: "Buat Aktivitas Baru",
                     url: "/teacher/activities/create",
                     icon: Sparkles,
                 },
@@ -110,7 +113,7 @@ const data = {
             ],
         },
         {
-            title: "Assignments",
+            title: "Tugas",
             url: "/teacher/assignments",
             icon: FileText,
             badge: {
@@ -119,24 +122,24 @@ const data = {
             },
             items: [
                 {
-                    title: "Create Assignment",
+                    title: "Buat Tugas Baru",
                     url: "/teacher/assignments/create",
                     icon: Sparkles,
                 },
                 {
-                    title: "To Grade",
+                    title: "Perlu Dinilai",
                     url: "/teacher/assignments?status=ungraded",
                     icon: Clock,
                     count: 5,
                 },
                 {
-                    title: "Active",
+                    title: "Tugas Aktif",
                     url: "/teacher/assignments?status=active",
                     icon: Calendar,
                     count: 8,
                 },
                 {
-                    title: "Completed",
+                    title: "Tugas Selesai",
                     url: "/teacher/assignments?status=completed",
                     icon: Award,
                     count: 11,
@@ -144,88 +147,115 @@ const data = {
             ],
         },
         {
-            title: "Students",
-            url: "/teacher/students",
-            icon: Users,
-            badge: "85",
+            title: "Rubrik Penilaian",
+            url: "/teacher/rubrics",
+            icon: ClipboardList,
             items: [
                 {
-                    title: "Class List",
-                    url: "/teacher/students",
-                    icon: GraduationCap,
+                    title: "Buat Rubrik Baru",
+                    url: "/teacher/rubrics/create",
+                    icon: Sparkles,
                 },
                 {
-                    title: "Progress Reports",
-                    url: "/teacher/students/progress",
-                    icon: LineChart,
+                    title: "Semua Rubrik",
+                    url: "/teacher/rubrics",
+                    icon: ClipboardList,
                 },
                 {
-                    title: "HOTS Analytics",
-                    url: "/teacher/students/analytics",
-                    icon: BarChart2,
+                    title: "Import/Export",
+                    url: "/teacher/rubrics/import",
+                    icon: FileOutput,
                 },
             ],
         },
         {
-            title: "Modules",
+            title: "Modul Pembelajaran",
             url: "/teacher/modules",
             icon: BookMarked,
             badge: "12",
             items: [
                 {
-                    title: "Create Module",
+                    title: "Buat Modul Baru",
                     url: "/teacher/modules/create",
                     icon: Sparkles,
                 },
                 {
-                    title: "All Modules",
+                    title: "Semua Modul",
                     url: "/teacher/modules",
                     icon: BookMarked,
+                },
+            ],
+        },
+        {
+            title: "Siswa",
+            url: "/teacher/students",
+            icon: Users,
+            badge: "85",
+            items: [
+                {
+                    title: "Daftar Siswa",
+                    url: "/teacher/students",
+                    icon: GraduationCap,
+                },
+                {
+                    title: "Laporan Kemajuan",
+                    url: "/teacher/students/progress",
+                    icon: LineChart,
+                },
+                {
+                    title: "Analisis HOTS",
+                    url: "/teacher/students/analytics",
+                    icon: Gauge,
                 },
             ],
         },
     ],
     navSecondary: [
         {
-            title: "Discussions",
+            title: "Forum Diskusi",
             url: "/teacher/discussions",
             icon: MessageSquare,
             badge: {
-                text: "New",
+                text: "Baru",
                 variant: "default" as const,
             },
         },
         {
-            title: "Weekly Challenges",
+            title: "Tantangan Mingguan",
             url: "/teacher/challenges",
             icon: Award,
         },
         {
-            title: "Settings",
+            title: "Laporan & Ekspor",
+            url: "/teacher/reports",
+            icon: FileOutput,
+        },
+        {
+            title: "Pengaturan",
             url: "/teacher/settings",
             icon: Settings,
         },
         {
-            title: "Support",
+            title: "Bantuan",
             url: "/teacher/support",
             icon: LifeBuoy,
         },
     ],
     courses: [
         {
-            name: "English 10A",
+            name: "Bahasa Inggris 10A",
             url: "/teacher/courses/english-10a",
             icon: BookOpen,
             students: 32,
         },
         {
-            name: "HOTS Advanced",
+            name: "HOTS Lanjutan",
             url: "/teacher/courses/hots-advanced",
             icon: Award,
             students: 28,
         },
         {
-            name: "Creative Writing",
+            name: "Menulis Kreatif",
             url: "/teacher/courses/creative-writing",
             icon: FileEdit,
             students: 25,
@@ -262,7 +292,7 @@ export function TeacherSidebar({
                                         HOTS English
                                     </span>
                                     <span className='text-xs text-muted-foreground'>
-                                        Teacher Portal
+                                        Portal Guru
                                     </span>
                                 </div>
                             </a>

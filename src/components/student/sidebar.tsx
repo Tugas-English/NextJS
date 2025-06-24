@@ -2,24 +2,15 @@
 
 import * as React from "react";
 import {
-    BookOpen,
-    ClipboardList,
-    Users,
     FileText,
-    Activity,
     LifeBuoy,
     MessageSquare,
     Award,
     BarChart2,
-    FileEdit,
     BookMarked,
     Sparkles,
-    GraduationCap,
     Settings,
-    Calendar,
     LineChart,
-    Newspaper,
-    Clock,
     BrainCircuit,
 } from "lucide-react";
 
@@ -305,54 +296,6 @@ function NavMainItem({
                 )}
             </div>
         </SidebarMenuItem>
-    );
-}
-
-function NavCourses({
-    courses,
-}: {
-    courses: Array<{
-        name: string;
-        url: string;
-        icon: React.ElementType;
-        students?: number;
-    }>;
-}) {
-    return (
-        <div className='px-3 py-2'>
-            <h3 className='mb-2 px-2 text-xs font-medium text-muted-foreground'>
-                Kelas Aktif
-            </h3>
-            <div className='space-y-1'>
-                {courses.map((course) => {
-                    const Icon = course.icon;
-                    return (
-                        <a
-                            key={course.name}
-                            href={course.url}
-                            className='flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent'
-                        >
-                            <div className='flex items-center gap-2'>
-                                <Icon className='size-4 text-muted-foreground' />
-                                <span className='text-sm'>{course.name}</span>
-                            </div>
-                            {course.students !== undefined && (
-                                <span className='text-xs text-muted-foreground'>
-                                    {course.students} siswa
-                                </span>
-                            )}
-                        </a>
-                    );
-                })}
-
-                <button className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent'>
-                    <span className='flex h-4 w-4 items-center justify-center rounded-full border'>
-                        +
-                    </span>
-                    <span>Tambah Kelas</span>
-                </button>
-            </div>
-        </div>
     );
 }
 
