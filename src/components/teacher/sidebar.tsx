@@ -1,4 +1,3 @@
-// src/components/teacher/sidebar.tsx
 "use client";
 
 import * as React from "react";
@@ -24,19 +23,35 @@ import {
     ClipboardList,
     Gauge,
     FileOutput,
+    ChevronRight,
+    Plus,
+    Library,
+    TrendingUp,
+    MessageCircle,
 } from "lucide-react";
 
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
     SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "../ui/collapsible";
+import { NavUser } from "./nav-user";
 
 type BadgeVariant = "default" | "destructive" | "outline";
 
@@ -54,11 +69,12 @@ interface NavItem {
     }>;
 }
 
-interface SecondaryNavItem {
-    title: string;
+interface CourseItem {
+    name: string;
     url: string;
     icon: React.ElementType;
-    badge?: { text: string; variant: BadgeVariant };
+    students: number;
+    isActive?: boolean;
 }
 
 const data = {
@@ -219,26 +235,102 @@ const data = {
                 text: "Baru",
                 variant: "default" as const,
             },
+            items: [
+                {
+                    title: "Daftar Diskusi",
+                    url: "/teacher/discussions",
+                    icon: MessageCircle,
+                },
+                {
+                    title: "Buat Diskusi",
+                    url: "/teacher/discussions/create",
+                    icon: Plus,
+                },
+            ],
         },
         {
             title: "Tantangan Mingguan",
             url: "/teacher/challenges",
             icon: Award,
+            badge: "3",
+            items: [
+                {
+                    title: "Daftar Tantangan",
+                    url: "/teacher/challenges",
+                    icon: MessageCircle,
+                },
+                {
+                    title: "Buat Tantangan",
+                    url: "/teacher/challenges/create",
+                    icon: Plus,
+                },
+            ],
         },
         {
             title: "Laporan & Ekspor",
             url: "/teacher/reports",
             icon: FileOutput,
+            items: [
+                {
+                    title: "Laporan Kelas",
+                    url: "/teacher/reports/class",
+                    icon: BarChart2,
+                },
+                {
+                    title: "Laporan Siswa",
+                    url: "/teacher/reports/student",
+                    icon: Users,
+                },
+                {
+                    title: "Ekspor Data",
+                    url: "/teacher/reports/export",
+                    icon: FileOutput,
+                },
+            ],
         },
         {
             title: "Pengaturan",
             url: "/teacher/settings",
             icon: Settings,
+            items: [
+                {
+                    title: "Profil",
+                    url: "/teacher/settings/profile",
+                    icon: Users,
+                },
+                {
+                    title: "Notifikasi",
+                    url: "/teacher/settings/notifications",
+                    icon: MessageSquare,
+                },
+                {
+                    title: "Keamanan",
+                    url: "/teacher/settings/security",
+                    icon: Settings,
+                },
+            ],
         },
         {
             title: "Bantuan",
             url: "/teacher/support",
             icon: LifeBuoy,
+            items: [
+                {
+                    title: "Panduan Pengguna",
+                    url: "/teacher/support/guide",
+                    icon: BookOpen,
+                },
+                {
+                    title: "FAQ",
+                    url: "/teacher/support/faq",
+                    icon: MessageSquare,
+                },
+                {
+                    title: "Kontak Support",
+                    url: "/teacher/support/contact",
+                    icon: LifeBuoy,
+                },
+            ],
         },
     ],
     courses: [
@@ -247,20 +339,45 @@ const data = {
             url: "/teacher/courses/english-10a",
             icon: BookOpen,
             students: 32,
+            isActive: false,
         },
         {
             name: "HOTS Lanjutan",
             url: "/teacher/courses/hots-advanced",
-            icon: Award,
+            icon: TrendingUp,
             students: 28,
+            isActive: true,
         },
         {
             name: "Menulis Kreatif",
             url: "/teacher/courses/creative-writing",
             icon: FileEdit,
             students: 25,
+            isActive: false,
         },
     ],
+    coursesManagement: {
+        title: "Manajemen Kursus",
+        url: "/teacher/courses",
+        icon: Library,
+        items: [
+            {
+                title: "Buat Kursus Baru",
+                url: "/teacher/courses/create",
+                icon: Plus,
+            },
+            {
+                title: "Semua Kursus",
+                url: "/teacher/courses",
+                icon: Library,
+            },
+            {
+                title: "Arsip Kursus",
+                url: "/teacher/courses/archived",
+                icon: BookMarked,
+            },
+        ],
+    },
 };
 
 export function TeacherSidebar({
@@ -275,12 +392,12 @@ export function TeacherSidebar({
     }, [mounted]);
 
     return (
-        <Sidebar {...props}>
-            <SidebarHeader className='pb-2'>
+        <Sidebar {...props} collapsible='icon' variant='floating'>
+            <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size='lg' asChild>
-                            <a
+                            <Link
                                 href='/teacher'
                                 className='flex items-center gap-2'
                             >
@@ -295,30 +412,83 @@ export function TeacherSidebar({
                                         Portal Guru
                                     </span>
                                 </div>
-                            </a>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-
-            <SidebarContent className='py-2 mx-4'>
+            <SidebarContent className='overflow-hidden'>
                 <NavMain items={data.navMain} />
-                <SidebarSeparator className='my-2' />
-                <NavCourses courses={data.courses} />
-                <SidebarSeparator className='my-2' />
+                <SidebarSeparator />
                 <NavSecondary items={data.navSecondary} />
+                <SidebarSeparator />
+                <CoursesManagement item={data.coursesManagement} />
+                <NavCourses items={data.courses} />
             </SidebarContent>
+            <SidebarFooter>
+                <NavUser user={data.user} />
+            </SidebarFooter>
         </Sidebar>
     );
 }
 
 function NavMain({ items }: { items: NavItem[] }) {
     return (
-        <SidebarMenu>
-            {items.map((item) => (
-                <NavMainItem key={item.title} item={item} />
-            ))}
-        </SidebarMenu>
+        <SidebarGroup>
+            <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+            <SidebarMenu>
+                {items.map((item) => (
+                    <NavMainItem key={item.title} item={item} />
+                ))}
+            </SidebarMenu>
+        </SidebarGroup>
+    );
+}
+
+function NavSecondary({ items }: { items: NavItem[] }) {
+    return (
+        <SidebarGroup>
+            <SidebarGroupLabel>Alat & Bantuan</SidebarGroupLabel>
+            <SidebarMenu>
+                {items.map((item) => (
+                    <NavMainItem key={item.title} item={item} />
+                ))}
+            </SidebarMenu>
+        </SidebarGroup>
+    );
+}
+
+function CoursesManagement({ item }: { item: NavItem }) {
+    return (
+        <SidebarGroup>
+            <SidebarGroupLabel>Kursus</SidebarGroupLabel>
+            <SidebarMenu>
+                <NavMainItem item={item} />
+            </SidebarMenu>
+        </SidebarGroup>
+    );
+}
+
+function NavCourses({ items }: { items: CourseItem[] }) {
+    return (
+        <SidebarGroup>
+            <SidebarGroupLabel>Kursus Aktif</SidebarGroupLabel>
+            <SidebarMenu>
+                {items.map((item) => (
+                    <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton
+                            tooltip={`${item.name} - ${item.students} siswa`}
+                            asChild
+                        >
+                            <a href={item.url}>
+                                <item.icon />
+                                <span>{item.name}</span>
+                            </a>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+        </SidebarGroup>
     );
 }
 
@@ -341,180 +511,44 @@ function NavMainItem({
         }>;
     };
 }) {
-    const [isOpen, setIsOpen] = React.useState(item.isActive || false);
-    const Icon = item.icon;
-
     return (
-        <SidebarMenuItem>
-            <div className='flex w-full flex-col'>
-                <div className='flex items-center'>
-                    <SidebarMenuButton
-                        asChild
-                        className={cn(
-                            "flex-1",
-                            isOpen && item.items?.length && "font-medium"
-                        )}
-                    >
-                        <a
-                            href={item.url}
-                            className='flex items-center justify-between'
+        <Collapsible
+            key={item.title}
+            asChild
+            defaultOpen={item.isActive}
+            className='group/collapsible'
+        >
+            <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                    <Link href={item.url}>
+                        <SidebarMenuButton
+                            tooltip={item.title}
+                            className='hover:cursor-pointer'
                         >
-                            <div className='flex items-center gap-3'>
-                                <Icon className='size-4' />
-                                <span>{item.title}</span>
-                            </div>
-
-                            {item.badge &&
-                                (typeof item.badge === "string" ? (
-                                    <Badge
-                                        variant='outline'
-                                        className='ml-auto'
-                                    >
-                                        {item.badge}
-                                    </Badge>
-                                ) : (
-                                    <Badge
-                                        variant={item.badge.variant}
-                                        className='ml-auto'
-                                    >
-                                        {item.badge.text}
-                                    </Badge>
-                                ))}
-                        </a>
-                    </SidebarMenuButton>
-
+                            {item.icon && <item.icon />}
+                            <span>{item.title}</span>
+                            {item.items?.length && (
+                                <ChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+                            )}
+                        </SidebarMenuButton>
+                    </Link>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
                     {item.items?.length && (
-                        <button
-                            onClick={() => setIsOpen(!isOpen)}
-                            className='flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent'
-                        >
-                            <svg
-                                width='15'
-                                height='15'
-                                viewBox='0 0 15 15'
-                                fill='none'
-                                xmlns='http://www.w3.org/2000/svg'
-                                className={cn(
-                                    "h-3 w-3 transition-transform",
-                                    isOpen ? "rotate-90" : ""
-                                )}
-                            >
-                                <path
-                                    d='M6 11L10 7.5L6 4'
-                                    stroke='currentColor'
-                                    strokeWidth='1.5'
-                                    strokeLinecap='round'
-                                    strokeLinejoin='round'
-                                />
-                            </svg>
-                        </button>
+                        <SidebarMenuSub>
+                            {item.items?.map((subItem) => (
+                                <SidebarMenuSubItem key={subItem.title}>
+                                    <SidebarMenuSubButton asChild>
+                                        <Link href={subItem.url}>
+                                            <span>{subItem.title}</span>
+                                        </Link>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            ))}
+                        </SidebarMenuSub>
                     )}
-                </div>
-
-                {isOpen && item.items?.length && (
-                    <div className='mt-1 ml-6 space-y-1'>
-                        {item.items.map((subItem) => (
-                            <a
-                                key={subItem.title}
-                                href={subItem.url}
-                                className='flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent'
-                            >
-                                <div className='flex items-center gap-2'>
-                                    {subItem.icon && (
-                                        <subItem.icon className='size-3.5' />
-                                    )}
-                                    <span>{subItem.title}</span>
-                                </div>
-                                {subItem.count !== undefined && (
-                                    <span className='text-xs text-muted-foreground'>
-                                        {subItem.count}
-                                    </span>
-                                )}
-                            </a>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </SidebarMenuItem>
-    );
-}
-
-function NavCourses({
-    courses,
-}: {
-    courses: Array<{
-        name: string;
-        url: string;
-        icon: React.ElementType;
-        students?: number;
-    }>;
-}) {
-    return (
-        <div className='px-3 py-2'>
-            <h3 className='mb-2 px-2 text-xs font-medium text-muted-foreground'>
-                Kelas Aktif
-            </h3>
-            <div className='space-y-1'>
-                {courses.map((course) => {
-                    const Icon = course.icon;
-                    return (
-                        <a
-                            key={course.name}
-                            href={course.url}
-                            className='flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent'
-                        >
-                            <div className='flex items-center gap-2'>
-                                <Icon className='size-4 text-muted-foreground' />
-                                <span className='text-sm'>{course.name}</span>
-                            </div>
-                            {course.students !== undefined && (
-                                <span className='text-xs text-muted-foreground'>
-                                    {course.students} siswa
-                                </span>
-                            )}
-                        </a>
-                    );
-                })}
-
-                <button className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent'>
-                    <span className='flex h-4 w-4 items-center justify-center rounded-full border'>
-                        +
-                    </span>
-                    <span>Tambah Kelas</span>
-                </button>
-            </div>
-        </div>
-    );
-}
-
-function NavSecondary({ items }: { items: SecondaryNavItem[] }) {
-    return (
-        <div className='px-3 py-2'>
-            <div className='space-y-1'>
-                {items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                        <a
-                            key={item.title}
-                            href={item.url}
-                            className='flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent'
-                        >
-                            <div className='flex items-center gap-2'>
-                                <Icon className='size-4 text-muted-foreground' />
-                                <span className='text-sm'>{item.title}</span>
-                            </div>
-                            {item.badge && (
-                                <Badge
-                                    variant={item.badge.variant}
-                                    className='text-xs'
-                                >
-                                    {item.badge.text}
-                                </Badge>
-                            )}
-                        </a>
-                    );
-                })}
-            </div>
-        </div>
+                </CollapsibleContent>
+            </SidebarMenuItem>
+        </Collapsible>
     );
 }
