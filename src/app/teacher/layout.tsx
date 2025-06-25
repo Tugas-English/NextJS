@@ -9,11 +9,9 @@ import {
     BreadcrumbItem,
     BreadcrumbLink,
     BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 import { Bell, Search, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,39 +25,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-function getBreadcrumbItems(path: string): { label: string; href: string }[] {
-    const segments = path.split("/").filter(Boolean);
-    const items: { label: string; href: string }[] = [];
-
-    let currentPath = "";
-
-    segments.forEach((segment, index) => {
-        currentPath += `/${segment}`;
-
-        let label = segment.charAt(0).toUpperCase() + segment.slice(0);
-
-        if (segment === "create" && index > 0) {
-            const parentSegment = segments[index - 1];
-            label = `Create ${
-                parentSegment.charAt(0).toUpperCase() +
-                parentSegment.slice(0, -1)
-            }`;
-        }
-
-        items.push({
-            label,
-            href: currentPath,
-        });
-    });
-
-    return items;
-}
-
 export default function TeacherLayout({ children }: { children: ReactNode }) {
-    const pathname = "/teacher";
-
-    const breadcrumbItems = getBreadcrumbItems(pathname);
-
     return (
         <SidebarProvider>
             <TeacherSidebar />
@@ -78,25 +44,6 @@ export default function TeacherLayout({ children }: { children: ReactNode }) {
                                         Teacher Area
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
-                                {breadcrumbItems.map((item, index) => (
-                                    <React.Fragment key={item.href}>
-                                        <BreadcrumbSeparator className='hidden md:block' />
-                                        <BreadcrumbItem>
-                                            {index ===
-                                            breadcrumbItems.length - 1 ? (
-                                                <BreadcrumbPage>
-                                                    {item.label}
-                                                </BreadcrumbPage>
-                                            ) : (
-                                                <BreadcrumbLink
-                                                    href={item.href}
-                                                >
-                                                    {item.label}
-                                                </BreadcrumbLink>
-                                            )}
-                                        </BreadcrumbItem>
-                                    </React.Fragment>
-                                ))}
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
