@@ -25,7 +25,6 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
-import React from "react";
 
 export function NavUser({
     user,
@@ -38,13 +37,6 @@ export function NavUser({
 }) {
     const { isMobile } = useSidebar();
 
-    const [mounted, setMounted] = React.useState(false);
-
-    React.useEffect(() => {
-        if (!mounted) {
-            setMounted(true);
-        }
-    }, [mounted]);
     return (
         <SidebarMenu>
             <SidebarMenuItem>
