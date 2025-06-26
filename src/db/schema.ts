@@ -1,6 +1,5 @@
 import {
     pgTable,
-    serial,
     text,
     timestamp,
     integer,
@@ -8,66 +7,116 @@ import {
     json,
     varchar,
     decimal,
-    unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-export const users = pgTable("users", {
-    id: serial("id").primaryKey(),
-    email: varchar("email", { length: 255 }).unique().notNull(),
-    name: varchar("name", { length: 100 }).notNull(),
+export const user = pgTable("user", {
+    id: text("id").primaryKey(),
+    email: text("email").notNull().unique(),
+    name: text("name").notNull(),
     password: varchar("password", { length: 255 }),
     role: varchar("role", { length: 20 }).notNull().default("student"), // 'student', 'teacher', 'admin'
-    avatarUrl: text("avatar_url"),
-    googleId: varchar("google_id", { length: 255 }).unique(),
+    image: text("avatar_url"),
+    emailVerified: boolean("email_verified")
+        .$defaultFn(() => false)
+        .notNull(),
+    provider: varchar("provider", { length: 20 })
+        .notNull()
+        .default("credentials"),
     isActive: boolean("is_active").default(true),
-    createdAt: timestamp("created_at").defaultNow(),
+    createdAt: timestamp("created_at")
+        .$defaultFn(() => /* @__PURE__ */ new Date())
+        .notNull(),
     updatedAt: timestamp("updated_at")
-        .defaultNow()
-        .$onUpdate(() => new Date()),
+        .$defaultFn(() => /* @__PURE__ */ new Date())
+        .notNull(),
+});
+
+export const session = pgTable("session", {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+        .notNull()
+        .references(() => user.id, { onDelete: "cascade" }),
+});
+
+export const account = pgTable("account", {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+});
+
+export const verification = pgTable("verification", {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").$defaultFn(
+        () => /* @__PURE__ */ new Date()
+    ),
+    updatedAt: timestamp("updated_at").$defaultFn(
+        () => /* @__PURE__ */ new Date()
+    ),
 });
 
 export const activities = pgTable("activities", {
-    id: serial("id").primaryKey(),
+    id: text("id").primaryKey(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     skill: varchar("skill", { length: 20 }).notNull(), // 'reading', 'listening', 'writing', 'speaking'
     hotsType: varchar("hots_type", { length: 50 }).notNull(), // 'analyze', 'evaluate', 'create', 'problem-solve', 'infer'
     difficulty: integer("difficulty").notNull().default(1), // 1-5
-    estimatedDuration: integer("estimated_duration"), // in minutes
-    content: text("content"), // Main text content
-    instructions: text("instructions"), // Step-by-step instructions
-    scaffoldingSteps: json("scaffolding_steps"), // JSON array of guidance steps
-    audioUrl: text("audio_url"), // URL for listening activities
-    videoUrl: text("video_url"), // URL for video content
-    attachmentUrls: json("attachment_urls"), // JSON array of additional files
+    estimatedDuration: integer("estimated_duration"),
+    content: text("content"),
+    instructions: text("instructions"),
+    scaffoldingSteps: json("scaffolding_steps"),
+    audioUrl: text("audio_url"),
+    videoUrl: text("video_url"),
+    attachmentUrls: json("attachment_urls"),
     isPublished: boolean("is_published").default(false),
-    tags: json("tags"), // JSON array for categorization
-    createdBy: integer("created_by").references(() => users.id),
+    tags: json("tags"),
+    createdBy: text("created_by").references(() => user.id),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const modules = pgTable("modules", {
-    id: serial("id").primaryKey(),
+    id: text("id").primaryKey(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     coverImage: text("cover_image"),
-    skill: varchar("skill", { length: 20 }), // Optional filter by skill
-    hotsType: varchar("hots_type", { length: 50 }), // Optional filter by HOTS type
-    difficulty: integer("difficulty"), // Optional difficulty level
+    skill: varchar("skill", { length: 20 }),
+    hotsType: varchar("hots_type", { length: 50 }),
+    difficulty: integer("difficulty"),
     isPublished: boolean("is_published").default(false),
-    createdBy: integer("created_by").references(() => users.id),
+    createdBy: text("created_by").references(() => user.id),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const moduleActivities = pgTable("module_activities", {
-    id: serial("id").primaryKey(),
-    moduleId: integer("module_id")
+    id: text("id").primaryKey(),
+    moduleId: text("module_id")
         .references(() => modules.id)
         .notNull(),
-    activityId: integer("activity_id")
+    activityId: text("activity_id")
         .references(() => activities.id)
         .notNull(),
     order: integer("order").notNull().default(1),
@@ -75,53 +124,29 @@ export const moduleActivities = pgTable("module_activities", {
 });
 
 export const rubrics = pgTable("rubrics", {
-    id: serial("id").primaryKey(),
+    id: text("id").primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
     description: text("description"),
     criteria: json("criteria").notNull(),
-    /* JSON structure example:
-    {
-        "hots_integration": {
-            "name": "HOTS Integration & Variety",
-            "weight": 40,
-            "levels": {
-                "4": "Excellent integration",
-                "3": "Good integration",
-                "2": "Fair integration",
-                "1": "Poor integration"
-            }
-        },
-        "clarity_scaffolding": {
-            "name": "Clarity & Scaffolding",
-            "weight": 35,
-            "levels": {...}
-        },
-        "content_quality": {
-            "name": "Content Quality",
-            "weight": 25,
-            "levels": {...}
-        }
-    }
-    */
     maxScore: integer("max_score").notNull().default(100),
     isDefault: boolean("is_default").default(false),
-    createdBy: integer("created_by").references(() => users.id),
+    createdBy: text("created_by").references(() => user.id),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const assignments = pgTable("assignments", {
-    id: serial("id").primaryKey(),
+    id: text("id").primaryKey(),
     title: varchar("title", { length: 255 }).notNull(),
-    activityId: integer("activity_id").references(() => activities.id),
-    moduleId: integer("module_id").references(() => modules.id), // Can be part of module or standalone
-    assignedBy: integer("assigned_by")
-        .references(() => users.id)
+    activityId: text("activity_id").references(() => activities.id),
+    moduleId: text("module_id").references(() => modules.id),
+    assignedBy: text("assigned_by")
+        .references(() => user.id)
         .notNull(),
-    assignedTo: json("assigned_to"), // JSON array of student IDs or "all"
+    assignedTo: json("assigned_to"),
     dueDate: timestamp("due_date"),
     instructions: text("instructions"),
-    rubricId: integer("rubric_id")
+    rubricId: text("rubric_id")
         .references(() => rubrics.id)
         .notNull(),
     allowResubmission: boolean("allow_resubmission").default(true),
@@ -134,19 +159,19 @@ export const assignments = pgTable("assignments", {
 });
 
 export const submissions = pgTable("submissions", {
-    id: serial("id").primaryKey(),
-    assignmentId: integer("assignment_id")
+    id: text("id").primaryKey(),
+    assignmentId: text("assignment_id")
         .references(() => assignments.id)
         .notNull(),
-    studentId: integer("student_id")
-        .references(() => users.id)
+    studentId: text("student_id")
+        .references(() => user.id)
         .notNull(),
-    version: integer("version").notNull().default(1), // For resubmissions
+    version: integer("version").notNull().default(1),
     textResponse: text("text_response"),
     audioUrl: text("audio_url"),
     videoUrl: text("video_url"),
-    documentUrls: json("document_urls"), // JSON array for multiple files
-    checklist: json("checklist"), // JSON for scaffolding checklist completion
+    documentUrls: json("document_urls"),
+    checklist: json("checklist"),
     isDraft: boolean("is_draft").default(false),
     submittedAt: timestamp("submitted_at"),
     revisedAt: timestamp("revised_at"),
@@ -154,57 +179,49 @@ export const submissions = pgTable("submissions", {
 });
 
 export const evaluations = pgTable("evaluations", {
-    id: serial("id").primaryKey(),
-    submissionId: integer("submission_id")
+    id: text("id").primaryKey(),
+    submissionId: text("submission_id")
         .references(() => submissions.id)
         .notNull(),
-    evaluatorId: integer("evaluator_id")
-        .references(() => users.id)
+    evaluatorId: text("evaluator_id")
+        .references(() => user.id)
         .notNull(),
-    rubricId: integer("rubric_id")
+    rubricId: text("rubric_id")
         .references(() => rubrics.id)
         .notNull(),
     scores: json("scores").notNull(),
-    /* JSON structure example:
-    {
-        "hots_integration": 85,
-        "clarity_scaffolding": 78,
-        "content_quality": 92,
-        "total": 85
-    }
-    */
-    criteriaFeedback: json("criteria_feedback"), // Feedback per criteria
+    criteriaFeedback: json("criteria_feedback"),
     generalFeedback: text("general_feedback"),
     isAutoGenerated: boolean("is_auto_generated").default(false),
     evaluatedAt: timestamp("evaluated_at").defaultNow(),
 });
 
 export const discussionThreads = pgTable("discussion_threads", {
-    id: serial("id").primaryKey(),
-    activityId: integer("activity_id").references(() => activities.id),
-    assignmentId: integer("assignment_id").references(() => assignments.id),
-    moduleId: integer("module_id").references(() => modules.id),
+    id: text("id").primaryKey(),
+    activityId: text("activity_id").references(() => activities.id),
+    assignmentId: text("assignment_id").references(() => assignments.id),
+    moduleId: text("module_id").references(() => modules.id),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     isPinned: boolean("is_pinned").default(false),
     isLocked: boolean("is_locked").default(false),
-    createdBy: integer("created_by")
-        .references(() => users.id)
+    createdBy: text("created_by")
+        .references(() => user.id)
         .notNull(),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const discussionPosts = pgTable("discussion_posts", {
-    id: serial("id").primaryKey(),
-    threadId: integer("thread_id")
+    id: text("id").primaryKey(),
+    threadId: text("thread_id")
         .references(() => discussionThreads.id)
         .notNull(),
-    authorId: integer("author_id")
-        .references(() => users.id)
+    authorId: text("author_id")
+        .references(() => user.id)
         .notNull(),
     content: text("content").notNull(),
-    parentId: integer("parent_id").references(() => discussionPosts.id),
+    parentId: text("parent_id"),
     attachmentUrls: json("attachment_urls"),
     likesCount: integer("likes_count").default(0),
     isEdited: boolean("is_edited").default(false),
@@ -212,92 +229,70 @@ export const discussionPosts = pgTable("discussion_posts", {
     updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const postLikes = pgTable(
-    "post_likes",
-    {
-        id: serial("id").primaryKey(),
-        postId: integer("post_id")
-            .references(() => discussionPosts.id)
-            .notNull(),
-        userId: integer("user_id")
-            .references(() => users.id)
-            .notNull(),
-        createdAt: timestamp("created_at").defaultNow(),
-    },
-    (table) => ({
-        uniqueUserPost: unique().on(table.userId, table.postId),
-    })
-);
+export const postLikes = pgTable("post_likes", {
+    id: text("id").primaryKey(),
+    postId: text("post_id")
+        .references(() => discussionPosts.id)
+        .notNull(),
+    userId: text("user_id")
+        .references(() => user.id)
+        .notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const weeklyChallenges = pgTable("weekly_challenges", {
-    id: serial("id").primaryKey(),
+    id: text("id").primaryKey(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description").notNull(),
     skill: varchar("skill", { length: 20 }), // Optional skill focus
     hotsType: varchar("hots_type", { length: 50 }), // Optional HOTS focus
     startDate: timestamp("start_date").notNull(),
     endDate: timestamp("end_date").notNull(),
-    activityId: integer("activity_id").references(() => activities.id),
-    assignmentId: integer("assignment_id").references(() => assignments.id),
+    activityId: text("activity_id").references(() => activities.id),
+    assignmentId: text("assignment_id").references(() => assignments.id),
     rewardPoints: integer("reward_points").notNull().default(100),
     badgeImage: text("badge_image"),
     participantCount: integer("participant_count").default(0),
     isActive: boolean("is_active").default(true),
-    createdBy: integer("created_by").references(() => users.id),
+    createdBy: text("created_by").references(() => user.id),
     createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const challengeParticipants = pgTable(
-    "challenge_participants",
-    {
-        id: serial("id").primaryKey(),
-        challengeId: integer("challenge_id")
-            .references(() => weeklyChallenges.id)
-            .notNull(),
-        userId: integer("user_id")
-            .references(() => users.id)
-            .notNull(),
-        submissionId: integer("submission_id").references(() => submissions.id),
-        points: integer("points").default(0),
-        rank: integer("rank"),
-        completedAt: timestamp("completed_at"),
-        joinedAt: timestamp("joined_at").defaultNow(),
-    },
-    (table) => ({
-        uniqueUserChallenge: unique().on(table.userId, table.challengeId),
-    })
-);
+export const challengeParticipants = pgTable("challenge_participants", {
+    id: text("id").primaryKey(),
+    challengeId: text("challenge_id")
+        .references(() => weeklyChallenges.id)
+        .notNull(),
+    userId: text("user_id")
+        .references(() => user.id)
+        .notNull(),
+    submissionId: text("submission_id").references(() => submissions.id),
+    points: integer("points").default(0),
+    rank: integer("rank"),
+    completedAt: timestamp("completed_at"),
+    joinedAt: timestamp("joined_at").defaultNow(),
+});
 
-export const userProgress = pgTable(
-    "user_progress",
-    {
-        id: serial("id").primaryKey(),
-        userId: integer("user_id")
-            .references(() => users.id)
-            .notNull(),
-        hotsType: varchar("hots_type", { length: 50 }).notNull(),
-        skill: varchar("skill", { length: 20 }).notNull(),
-        completedActivities: integer("completed_activities").default(0),
-        averageScore: decimal("average_score", {
-            precision: 5,
-            scale: 2,
-        }).default("0"),
-        totalScore: integer("total_score").default(0),
-        improvementRate: decimal("improvement_rate", {
-            precision: 5,
-            scale: 2,
-        }).default("0"), // Percentage improvement
-        lastActivityDate: timestamp("last_activity_date"),
-        lastUpdated: timestamp("last_updated").defaultNow(),
-    },
-    (table) => ({
-        uniqueUserSkillHots: unique().on(
-            table.userId,
-            table.skill,
-            table.hotsType
-        ),
-    })
-);
+export const userProgress = pgTable("user_progress", {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+        .references(() => user.id)
+        .notNull(),
+    hotsType: varchar("hots_type", { length: 50 }).notNull(),
+    skill: varchar("skill", { length: 20 }).notNull(),
+    completedActivities: integer("completed_activities").default(0),
+    averageScore: decimal("average_score", {
+        precision: 5,
+        scale: 2,
+    }).default("0"),
+    totalScore: integer("total_score").default(0),
+    improvementRate: decimal("improvement_rate", {
+        precision: 5,
+        scale: 2,
+    }).default("0"), // Percentage improvement
+    lastActivityDate: timestamp("last_activity_date"),
+    lastUpdated: timestamp("last_updated").defaultNow(),
+});
 
 export const badges = pgTable("badges", {
     id: varchar("id", { length: 100 }).primaryKey(), // e.g., "hots_master", "writing_expert"
@@ -310,27 +305,21 @@ export const badges = pgTable("badges", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const userBadges = pgTable(
-    "user_badges",
-    {
-        id: serial("id").primaryKey(),
-        userId: integer("user_id")
-            .references(() => users.id)
-            .notNull(),
-        badgeId: varchar("badge_id", { length: 100 })
-            .references(() => badges.id)
-            .notNull(),
-        earnedAt: timestamp("earned_at").defaultNow(),
-    },
-    (table) => ({
-        uniqueUserBadge: unique().on(table.userId, table.badgeId),
-    })
-);
+export const userBadges = pgTable("user_badges", {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+        .references(() => user.id)
+        .notNull(),
+    badgeId: varchar("badge_id", { length: 100 })
+        .references(() => badges.id)
+        .notNull(),
+    earnedAt: timestamp("earned_at").defaultNow(),
+});
 
 export const userPoints = pgTable("user_points", {
-    userId: integer("user_id")
-        .references(() => users.id)
-        .primaryKey(),
+    userId: text("user_id")
+        .references(() => user.id)
+        .notNull(),
     totalPoints: integer("total_points").default(0),
     monthlyPoints: integer("monthly_points").default(0),
     weeklyPoints: integer("weekly_points").default(0),
@@ -341,9 +330,9 @@ export const userPoints = pgTable("user_points", {
 });
 
 export const activityFilters = pgTable("activity_filters", {
-    id: serial("id").primaryKey(),
-    userId: integer("user_id")
-        .references(() => users.id)
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+        .references(() => user.id)
         .notNull(),
     skills: json("skills"), // JSON array of selected skills
     hotsTypes: json("hots_types"), // JSON array of selected HOTS types
@@ -354,9 +343,9 @@ export const activityFilters = pgTable("activity_filters", {
 });
 
 export const reportExports = pgTable("report_exports", {
-    id: serial("id").primaryKey(),
-    generatedBy: integer("generated_by")
-        .references(() => users.id)
+    id: text("id").primaryKey(),
+    generatedBy: text("generated_by")
+        .references(() => user.id)
         .notNull(),
     type: varchar("type", { length: 50 }).notNull(), // 'student_progress', 'assignment_results', 'class_summary'
     filters: json("filters"), // Export parameters
@@ -368,7 +357,7 @@ export const reportExports = pgTable("report_exports", {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const userRelations = relations(user, ({ many }) => ({
     activities: many(activities),
     assignments: many(assignments),
     submissions: many(submissions),
@@ -381,9 +370,9 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const activitiesRelations = relations(activities, ({ one, many }) => ({
-    creator: one(users, {
+    creator: one(user, {
         fields: [activities.createdBy],
-        references: [users.id],
+        references: [user.id],
     }),
     moduleActivities: many(moduleActivities),
     assignments: many(assignments),
@@ -392,9 +381,9 @@ export const activitiesRelations = relations(activities, ({ one, many }) => ({
 }));
 
 export const modulesRelations = relations(modules, ({ one, many }) => ({
-    creator: one(users, {
+    creator: one(user, {
         fields: [modules.createdBy],
-        references: [users.id],
+        references: [user.id],
     }),
     moduleActivities: many(moduleActivities),
     assignments: many(assignments),
@@ -410,9 +399,9 @@ export const assignmentsRelations = relations(assignments, ({ one, many }) => ({
         fields: [assignments.moduleId],
         references: [modules.id],
     }),
-    assignedBy: one(users, {
+    assignedBy: one(user, {
         fields: [assignments.assignedBy],
-        references: [users.id],
+        references: [user.id],
     }),
     rubric: one(rubrics, {
         fields: [assignments.rubricId],
@@ -427,9 +416,9 @@ export const submissionsRelations = relations(submissions, ({ one, many }) => ({
         fields: [submissions.assignmentId],
         references: [assignments.id],
     }),
-    student: one(users, {
+    student: one(user, {
         fields: [submissions.studentId],
-        references: [users.id],
+        references: [user.id],
     }),
     evaluations: many(evaluations),
 }));
@@ -449,9 +438,9 @@ export const discussionThreadsRelations = relations(
             fields: [discussionThreads.moduleId],
             references: [modules.id],
         }),
-        creator: one(users, {
+        creator: one(user, {
             fields: [discussionThreads.createdBy],
-            references: [users.id],
+            references: [user.id],
         }),
         posts: many(discussionPosts),
     })
@@ -464,9 +453,9 @@ export const discussionPostsRelations = relations(
             fields: [discussionPosts.threadId],
             references: [discussionThreads.id],
         }),
-        author: one(users, {
+        author: one(user, {
             fields: [discussionPosts.authorId],
-            references: [users.id],
+            references: [user.id],
         }),
         parent: one(discussionPosts, {
             fields: [discussionPosts.parentId],
@@ -488,9 +477,9 @@ export const weeklyChallengesRelations = relations(
             fields: [weeklyChallenges.assignmentId],
             references: [assignments.id],
         }),
-        creator: one(users, {
+        creator: one(user, {
             fields: [weeklyChallenges.createdBy],
-            references: [users.id],
+            references: [user.id],
         }),
         participants: many(challengeParticipants),
     })
