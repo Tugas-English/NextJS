@@ -18,7 +18,6 @@ const activities = [
         hotsType: "Analyze",
         createdAt: "2024-03-15",
     },
-    // Data lainnya...
 ];
 
 export default function ActivitiesPage() {

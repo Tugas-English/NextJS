@@ -24,7 +24,7 @@ import {
     Settings,
 } from "lucide-react";
 
-export default function HomePage() {
+export default async function HomePage() {
     return (
         <div className='flex flex-col min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-50'>
             <header className='sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm dark:bg-gray-950/80 dark:border-gray-800'>

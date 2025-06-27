@@ -1,14 +1,4 @@
-"use client";
-
-import {
-    BadgeCheck,
-    Bell,
-    ChevronsUpDown,
-    CreditCard,
-    LogOut,
-    Sparkles,
-} from "lucide-react";
-
+import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -25,17 +15,26 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
+import { User } from "@/lib/auth";
+import { getInitials } from "@/utils";
+import { signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
-export function NavUser({
-    user,
-}: {
-    user: {
-        name: string;
-        email: string;
-        avatar: string;
-    };
-}) {
+export function SidebarFooterUser({ user }: { user: User }) {
     const { isMobile } = useSidebar();
+    const router = useRouter();
+
+    const handleSignOut = async () => {
+        await signOut({
+            fetchOptions: {
+                onSuccess: () => {
+                    toast.success("Sign Out Succesfully");
+                    router.push("/");
+                },
+            },
+        });
+    };
 
     return (
         <SidebarMenu>
@@ -48,11 +47,11 @@ export function NavUser({
                         >
                             <Avatar className='h-8 w-8 rounded-lg'>
                                 <AvatarImage
-                                    src={user.avatar}
+                                    src={user.image || ""}
                                     alt={user.name}
                                 />
                                 <AvatarFallback className='rounded-lg'>
-                                    CN
+                                    {getInitials(user.name)}
                                 </AvatarFallback>
                             </Avatar>
                             <div className='grid flex-1 text-left text-sm leading-tight'>
@@ -76,11 +75,11 @@ export function NavUser({
                             <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                                 <Avatar className='h-8 w-8 rounded-lg'>
                                     <AvatarImage
-                                        src={user.avatar}
+                                        src={user.image || ""}
                                         alt={user.name}
                                     />
                                     <AvatarFallback className='rounded-lg'>
-                                        CN
+                                        {getInitials(user.name)}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className='grid flex-1 text-left text-sm leading-tight'>
@@ -96,19 +95,8 @@ export function NavUser({
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
                             <DropdownMenuItem>
-                                <Sparkles />
-                                Upgrade to Pro
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem>
                                 <BadgeCheck />
                                 Account
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <CreditCard />
-                                Billing
                             </DropdownMenuItem>
                             <DropdownMenuItem>
                                 <Bell />
@@ -116,7 +104,7 @@ export function NavUser({
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleSignOut}>
                             <LogOut />
                             Log out
                         </DropdownMenuItem>

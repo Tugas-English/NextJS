@@ -1,5 +1,4 @@
 "use client";
-
 import * as React from "react";
 import {
     BookOpen,
@@ -51,7 +50,8 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "../ui/collapsible";
-import { NavUser } from "./nav-user";
+import { SidebarFooterUser } from "./sidebar-footer";
+import { User } from "@/lib/auth";
 
 type BadgeVariant = "default" | "destructive" | "outline";
 
@@ -78,12 +78,6 @@ interface CourseItem {
 }
 
 const data = {
-    user: {
-        name: "Ms. Johnson",
-        email: "teacher@example.com",
-        avatar: "/avatars/teacher.jpg",
-        role: "English Teacher",
-    },
     navMain: [
         {
             title: "Dashboard",
@@ -381,8 +375,11 @@ const data = {
 };
 
 export function TeacherSidebar({
+    user,
     ...props
-}: React.ComponentProps<typeof Sidebar>) {
+}: React.ComponentProps<typeof Sidebar> & {
+    user?: User;
+}) {
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
@@ -426,7 +423,7 @@ export function TeacherSidebar({
                 <NavCourses items={data.courses} />
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={data.user} />
+                {user && <SidebarFooterUser user={user} />}
             </SidebarFooter>
         </Sidebar>
     );
