@@ -1,17 +1,13 @@
 import { Button } from "@/components/ui/button";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Plus, FileText, Calendar, CheckCircle } from "lucide-react";
+import { SearchParams } from "@/types";
+import { getServerSession } from "@/lib/session";
+import { getAssignments } from "@/lib/actions/assignments";
+import { Suspense } from "react";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
+import { AssignmentsTable } from "./_components/assignments-table";
 
-// Data dummy untuk assignments
 const assignments = [
     {
         id: "1",
@@ -51,7 +47,28 @@ const assignments = [
     },
 ];
 
-export default function AssignmentsTeacherPage() {
+interface AssignmentsPageProps {
+    searchParams: Promise<SearchParams>;
+}
+
+export default async function AssignmentsTeacherPage(
+    props: AssignmentsPageProps
+) {
+    const session = await getServerSession();
+    const searchParams = await props.searchParams;
+
+    const page = Number(searchParams.page) || 1;
+    const perPage = Number(searchParams.perPage) || 10;
+    const search = searchParams.search?.toString();
+
+    const assignmentsPromises = Promise.all([
+        getAssignments({
+            page,
+            perPage,
+            search,
+            assignedBy: session?.user?.id,
+        }),
+    ]);
     return (
         <div className='space-y-6'>
             <div className='flex justify-between items-center'>
@@ -114,108 +131,17 @@ export default function AssignmentsTeacherPage() {
                     </div>
                 </div>
             </div>
-
-            <div className='rounded-md border'>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Assignment</TableHead>
-                            <TableHead>Activity</TableHead>
-                            <TableHead>Due Date</TableHead>
-                            <TableHead>Submissions</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className='text-right'>
-                                Actions
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {assignments.map((assignment) => (
-                            <TableRow key={assignment.id}>
-                                <TableCell className='font-medium'>
-                                    <div className='flex items-center'>
-                                        {assignment.title}
-                                        {assignment.isChallenge && (
-                                            <Badge
-                                                variant='secondary'
-                                                className='ml-2'
-                                            >
-                                                Challenge
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {assignment.activityTitle}
-                                </TableCell>
-                                <TableCell>
-                                    <span
-                                        className={`${
-                                            new Date(assignment.dueDate) <
-                                            new Date()
-                                                ? "text-red-500"
-                                                : ""
-                                        }`}
-                                    >
-                                        {assignment.dueDate}
-                                    </span>
-                                </TableCell>
-                                <TableCell>
-                                    {assignment.submissions > 0 ? (
-                                        <span>
-                                            {assignment.submissions -
-                                                assignment.pending}
-                                            /{assignment.submissions} reviewed
-                                        </span>
-                                    ) : (
-                                        <span className='text-muted-foreground'>
-                                            No submissions
-                                        </span>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    {new Date(assignment.dueDate) <
-                                    new Date() ? (
-                                        <Badge variant='destructive'>
-                                            Expired
-                                        </Badge>
-                                    ) : assignment.pending > 0 ? (
-                                        <Badge
-                                            variant='outline'
-                                            className='bg-amber-50 text-amber-700 border-amber-200'
-                                        >
-                                            Pending Review
-                                        </Badge>
-                                    ) : (
-                                        <Badge
-                                            variant='outline'
-                                            className='bg-green-50 text-green-700 border-green-200'
-                                        >
-                                            Active
-                                        </Badge>
-                                    )}
-                                </TableCell>
-                                <TableCell className='text-right space-x-2'>
-                                    <Button variant='outline' size='sm' asChild>
-                                        <Link
-                                            href={`/teacher/assignments/${assignment.id}`}
-                                        >
-                                            View
-                                        </Link>
-                                    </Button>
-                                    <Button variant='outline' size='sm' asChild>
-                                        <Link
-                                            href={`/teacher/assignments/${assignment.id}/edit`}
-                                        >
-                                            Edit
-                                        </Link>
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            <Suspense
+                fallback={
+                    <DataTableSkeleton
+                        columnCount={6}
+                        filterCount={3}
+                        rowCount={5}
+                    />
+                }
+            >
+                <AssignmentsTable promises={assignmentsPromises} />
+            </Suspense>
         </div>
     );
 }

@@ -9,14 +9,77 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { LoginInput, loginSchema } from "@/lib/schemas/auth";
+import { toast } from "sonner";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "./ui/form";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export function LoginForm({
     className,
     ...props
 }: React.ComponentProps<"div">) {
+    const [loading, setIsLoading] = useState(false);
+    const router = useRouter();
+
+    const form = useForm<LoginInput>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: {
+            email: "munaalur@gmail.com",
+            password: "Arkannando1@",
+        },
+    });
+
+    const handleSubmit = async (data: LoginInput) => {
+        try {
+            const result = await signIn.email({
+                email: data.email,
+                password: data.password,
+            });
+
+            const userRole = result.data?.user;
+            console.log("User role:", userRole);
+            if (result.error) {
+                toast.error(`${result.error.message}` || "Login Gagal");
+            } else {
+                toast.success(`Login Berhasil`);
+            }
+        } catch (err) {
+            const errorMessage =
+                err instanceof Error
+                    ? err.message
+                    : "Registration failed. Please try again.";
+            toast.error(errorMessage);
+            console.error("Registration error:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            await signIn.social({
+                provider: "google",
+                callbackURL: "/dashboard",
+            });
+        } catch (error) {
+            console.error("Google login error:", error);
+            toast.error("Google login failed");
+        }
+    };
+
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card>
@@ -29,15 +92,7 @@ export function LoginForm({
                         <Button
                             variant='outline'
                             className='w-full'
-                            onClick={() => {
-                                try {
-                                    signIn.social({
-                                        provider: "google",
-                                    });
-                                } catch (error) {
-                                    console.error("Login error:", error);
-                                }
-                            }}
+                            onClick={handleGoogleLogin}
                         >
                             <svg
                                 xmlns='http://www.w3.org/2000/svg'
@@ -67,45 +122,64 @@ export function LoginForm({
                             Login with Google
                         </Button>
                     </div>
-                    <form>
-                        <div className='grid gap-6'>
-                            <div className='after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t'>
-                                <span className='bg-card text-muted-foreground relative z-10 px-2'>
-                                    Or continue with
-                                </span>
-                            </div>
-                            <div className='grid gap-6'>
-                                <div className='grid gap-3'>
-                                    <Label htmlFor='email'>Email</Label>
-                                    <Input
-                                        id='email'
-                                        type='email'
-                                        placeholder='m@example.com'
-                                        required
-                                    />
-                                </div>
-                                <div className='grid gap-3'>
-                                    <div className='flex items-center'>
-                                        <Label htmlFor='password'>
-                                            Password
-                                        </Label>
-                                        <a
-                                            href='#'
-                                            className='ml-auto text-sm underline-offset-4 hover:underline'
-                                        >
-                                            Forgot your password?
-                                        </a>
-                                    </div>
-                                    <Input
-                                        id='password'
-                                        type='password'
-                                        required
-                                    />
-                                </div>
-                                <Button type='submit' className='w-full'>
-                                    Login
-                                </Button>
-                            </div>
+                    <Form {...form}>
+                        <form
+                            onSubmit={form.handleSubmit(handleSubmit)}
+                            className='space-y-6'
+                        >
+                            <FormField
+                                control={form.control}
+                                name='email'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type='email'
+                                                placeholder='m@example.com'
+                                                disabled={loading}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name='password'
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Password</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type='password'
+                                                placeholder='••••••••'
+                                                disabled={loading}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                        <p className='text-xs text-muted-foreground'>
+                                            Must contain uppercase, lowercase,
+                                            number, and special character
+                                        </p>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <Button
+                                type='submit'
+                                className='w-full'
+                                disabled={loading}
+                            >
+                                {loading && (
+                                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                )}
+                                {loading ? "Sign In..." : "Sign In"}
+                            </Button>
+
                             <div className='text-center text-sm'>
                                 Don&apos;t have an account?{" "}
                                 <Link
@@ -115,8 +189,8 @@ export function LoginForm({
                                     Sign up
                                 </Link>
                             </div>
-                        </div>
-                    </form>
+                        </form>
+                    </Form>
                 </CardContent>
             </Card>
             <div className='text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4'>

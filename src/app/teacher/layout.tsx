@@ -1,4 +1,3 @@
-import { TeacherSidebar } from "@/components/teacher/sidebar";
 import {
     SidebarInset,
     SidebarProvider,
@@ -13,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { ReactNode } from "react";
 import { getServerSession } from "@/lib/session";
+import { TeacherSidebar } from "./_components/sidebar";
 
 export default async function TeacherLayout({
     children,

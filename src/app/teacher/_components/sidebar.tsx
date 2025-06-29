@@ -16,7 +16,6 @@ import {
     Settings,
     Calendar,
     LineChart,
-    Newspaper,
     Clock,
     BrainCircuit,
     ClipboardList,
@@ -27,6 +26,7 @@ import {
     Library,
     TrendingUp,
     MessageCircle,
+    Newspaper,
 } from "lucide-react";
 
 import {
@@ -49,7 +49,7 @@ import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
-} from "../ui/collapsible";
+} from "../../../components/ui/collapsible";
 import { SidebarFooterUser } from "./sidebar-footer";
 import { User } from "@/lib/auth";
 
@@ -92,33 +92,14 @@ const data = {
             badge: "124",
             items: [
                 {
+                    title: "Semua Aktivitas",
+                    url: "/teacher/activities",
+                    icon: Newspaper,
+                },
+                {
                     title: "Buat Aktivitas Baru",
                     url: "/teacher/activities/create",
                     icon: Sparkles,
-                },
-                {
-                    title: "Reading",
-                    url: "/teacher/activities?skill=reading",
-                    icon: Newspaper,
-                    count: 45,
-                },
-                {
-                    title: "Listening",
-                    url: "/teacher/activities?skill=listening",
-                    icon: BookOpen,
-                    count: 32,
-                },
-                {
-                    title: "Writing",
-                    url: "/teacher/activities?skill=writing",
-                    icon: FileEdit,
-                    count: 28,
-                },
-                {
-                    title: "Speaking",
-                    url: "/teacher/activities?skill=speaking",
-                    icon: MessageSquare,
-                    count: 19,
                 },
             ],
         },
@@ -132,27 +113,15 @@ const data = {
             },
             items: [
                 {
-                    title: "Buat Tugas Baru",
-                    url: "/teacher/assignments/create",
-                    icon: Sparkles,
-                },
-                {
-                    title: "Perlu Dinilai",
-                    url: "/teacher/assignments?status=ungraded",
+                    title: "Daftar Tugas",
+                    url: "/teacher/assignments",
                     icon: Clock,
                     count: 5,
                 },
                 {
-                    title: "Tugas Aktif",
-                    url: "/teacher/assignments?status=active",
-                    icon: Calendar,
-                    count: 8,
-                },
-                {
-                    title: "Tugas Selesai",
-                    url: "/teacher/assignments?status=completed",
-                    icon: Award,
-                    count: 11,
+                    title: "Buat Tugas Baru",
+                    url: "/teacher/assignments/create",
+                    icon: Sparkles,
                 },
             ],
         },
@@ -185,14 +154,14 @@ const data = {
             badge: "12",
             items: [
                 {
-                    title: "Buat Modul Baru",
-                    url: "/teacher/modules/create",
-                    icon: Sparkles,
-                },
-                {
                     title: "Semua Modul",
                     url: "/teacher/modules",
                     icon: BookMarked,
+                },
+                {
+                    title: "Buat Modul Baru",
+                    url: "/teacher/modules/create",
+                    icon: Sparkles,
                 },
             ],
         },

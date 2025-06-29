@@ -1,77 +1,74 @@
+import { Suspense } from "react";
+import { ActivitiesTable } from "./_components/activitity-table";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Button } from "@/components/ui/button";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import Link from "next/link";
 import { Plus } from "lucide-react";
+import Link from "next/link";
+import {
+    getActivities,
+    getActivitySkillCounts,
+    getActivityHotsTypeCounts,
+    getDifficultyRange,
+} from "@/lib/actions/activities";
+import { getServerSession } from "@/lib/session";
+import { SearchParams } from "@/types";
 
-const activities = [
-    {
-        id: "1",
-        title: "Analyzing News Articles",
-        skill: "Reading",
-        hotsType: "Analyze",
-        createdAt: "2024-03-15",
-    },
-];
+interface ActivitiesPageProps {
+    searchParams: Promise<SearchParams>;
+}
 
-export default function ActivitiesPage() {
+export default async function ActivitiesPage(props: ActivitiesPageProps) {
+    const session = await getServerSession();
+    const searchParams = await props.searchParams;
+
+    const page = Number(searchParams.page) || 1;
+    const perPage = Number(searchParams.perPage) || 10;
+    const skill = searchParams.skill;
+    const hotsType = searchParams.hotsType;
+    const difficulty = searchParams.difficulty
+        ? Array.isArray(searchParams.difficulty)
+            ? searchParams.difficulty.map(Number)
+            : Number(searchParams.difficulty)
+        : undefined;
+    const search = searchParams.search?.toString();
+
+    const activitiesPromise = Promise.all([
+        getActivities({
+            page,
+            perPage,
+            skill,
+            hotsType,
+            difficulty,
+            search,
+            createdBy: session?.user?.id,
+        }),
+        getActivitySkillCounts(),
+        getActivityHotsTypeCounts(),
+        getDifficultyRange(),
+    ]);
+
     return (
-        <div className='space-y-6'>
-            <div className='flex justify-between items-center'>
-                <h1 className='text-3xl font-bold'>Activities</h1>
-                <Link href='/teacher/activities/create'>
-                    <Button>
+        <div className='space-y-4 p-4 sm:p-6 lg:p-8'>
+            <div className='flex items-center justify-between'>
+                <h1 className='text-3xl font-bold'>Aktivitas</h1>
+                <Button asChild>
+                    <Link href='/teacher/activities/create'>
                         <Plus className='mr-2 h-4 w-4' />
-                        Create Activity
-                    </Button>
-                </Link>
+                        Buat Aktivitas
+                    </Link>
+                </Button>
             </div>
-
-            <div className='rounded-md border'>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Skill</TableHead>
-                            <TableHead>HOTS Type</TableHead>
-                            <TableHead>Created At</TableHead>
-                            <TableHead className='text-right'>
-                                Actions
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {activities.map((activity) => (
-                            <TableRow key={activity.id}>
-                                <TableCell className='font-medium'>
-                                    {activity.title}
-                                </TableCell>
-                                <TableCell>{activity.skill}</TableCell>
-                                <TableCell>{activity.hotsType}</TableCell>
-                                <TableCell>{activity.createdAt}</TableCell>
-                                <TableCell className='text-right space-x-2'>
-                                    <Button variant='outline' size='sm' asChild>
-                                        <Link
-                                            href={`/teacher/activities/${activity.id}`}
-                                        >
-                                            Edit
-                                        </Link>
-                                    </Button>
-                                    <Button variant='destructive' size='sm'>
-                                        Delete
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            <Suspense
+                fallback={
+                    <DataTableSkeleton
+                        columnCount={6}
+                        filterCount={3}
+                        rowCount={5}
+                    />
+                }
+            >
+                <ActivitiesTable promises={activitiesPromise} />
+            </Suspense>
         </div>
     );
 }

@@ -1,3 +1,5 @@
+"use server";
+
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -17,247 +19,380 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { ArrowLeft, FileText, Clock, Calendar, User } from "lucide-react";
+import { db } from "@/db";
+import {
+    submissions,
+    evaluations,
+    user,
+    activities,
+    modules,
+    assignments,
+} from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
+import { getServerSession } from "@/lib/session";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { formatDate } from "date-fns";
 
-// Data dummy untuk detail assignment
-const assignment = {
-    id: "1",
-    title: "Analyzing News Articles",
-    activityTitle: "Critical News Analysis",
-    description:
-        "Analyze the provided news article and identify bias, perspective, and rhetorical devices used by the author.",
-    dueDate: "2024-07-15",
-    isChallenge: false,
-    rubric: {
-        name: "HOTS Reading Rubric",
-        maxScore: 100,
-    },
-    createdAt: "2024-06-20",
-};
+// Fungsi untuk mendapatkan detail tugas dengan data terkait
+async function getAssignmentWithDetails(assignmentId: string) {
+    try {
+        const assignment = await db.query.assignments.findFirst({
+            where: eq(assignments.id, assignmentId),
+            with: {
+                rubric: {
+                    columns: {
+                        id: true,
+                        name: true,
+                        maxScore: true,
+                    },
+                },
+                assignedBy: {
+                    columns: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
 
-// Data dummy untuk submissions
-const submissions = [
-    {
-        id: "1",
-        studentName: "Ahmad Fauzi",
-        submittedAt: "2024-07-10 14:30",
-        status: "evaluated",
-        score: 85,
-    },
-    {
-        id: "2",
-        studentName: "Siti Nuraini",
-        submittedAt: "2024-07-12 09:15",
-        status: "evaluated",
-        score: 92,
-    },
-    {
-        id: "3",
-        studentName: "Budi Santoso",
-        submittedAt: "2024-07-13 16:45",
-        status: "pending",
-        score: null,
-    },
-    {
-        id: "4",
-        studentName: "Dewi Lestari",
-        submittedAt: "2024-07-14 11:20",
-        status: "pending",
-        score: null,
-    },
-    {
-        id: "5",
-        studentName: "Eko Prasetyo",
-        submittedAt: "2024-07-14 13:05",
-        status: "pending",
-        score: null,
-    },
-];
+        if (!assignment) {
+            return null;
+        }
 
-export default function AssignmentDetailPage({
-    params,
-}: {
-    params: { id: string };
-}) {
+        // Ambil data aktivitas jika ada
+        let activityData = null;
+        if (assignment.activityId) {
+            activityData = await db.query.activities.findFirst({
+                where: eq(activities.id, assignment.activityId),
+                columns: {
+                    id: true,
+                    title: true,
+                },
+            });
+        }
+
+        // Ambil data modul jika ada
+        let moduleData = null;
+        if (assignment.moduleId) {
+            moduleData = await db.query.modules.findFirst({
+                where: eq(modules.id, assignment.moduleId),
+                columns: {
+                    id: true,
+                    title: true,
+                },
+            });
+        }
+
+        return {
+            ...assignment,
+            activityTitle: activityData?.title || null,
+            moduleTitle: moduleData?.title || null,
+        };
+    } catch (error) {
+        console.error("Error fetching assignment details:", error);
+        return null;
+    }
+}
+
+// Fungsi untuk mendapatkan data submission untuk tugas
+async function getSubmissionsByAssignmentId(assignmentId: string) {
+    try {
+        const submissionData = await db
+            .select({
+                id: submissions.id,
+                studentId: submissions.studentId,
+                studentName: user.name,
+                submittedAt: submissions.submittedAt,
+                version: submissions.version,
+                hasEvaluation: evaluations.id,
+                score: evaluations.scores,
+            })
+            .from(submissions)
+            .innerJoin(user, eq(submissions.studentId, user.id))
+            .leftJoin(evaluations, eq(submissions.id, evaluations.submissionId))
+            .where(
+                and(
+                    eq(submissions.assignmentId, assignmentId),
+                    eq(submissions.isDraft, false)
+                )
+            )
+            .orderBy(desc(submissions.submittedAt));
+
+        // Format data untuk tampilan
+        return submissionData.map((submission) => ({
+            id: submission.id,
+            studentId: submission.studentId,
+            studentName: submission.studentName,
+            submittedAt: submission.submittedAt
+                ? formatDate(submission.submittedAt, "dd MMM yyyy HH:mm")
+                : "-",
+            status: submission.hasEvaluation ? "evaluated" : "pending",
+            score: submission.score
+                ? calculateTotalScore(submission.score)
+                : null,
+            version: submission.version,
+        }));
+    } catch (error) {
+        console.error("Error fetching submissions:", error);
+        return [];
+    }
+}
+
+// Fungsi helper untuk menghitung skor total dari data evaluasi
+function calculateTotalScore(scores: any) {
+    if (!scores || typeof scores !== "object") return 0;
+
+    let totalScore = 0;
+    for (const criteriaId in scores) {
+        if (scores[criteriaId] && scores[criteriaId].score) {
+            totalScore += Number(scores[criteriaId].score);
+        }
+    }
+
+    return totalScore;
+}
+
+// Komponen untuk menampilkan detail tugas
+async function AssignmentDetail({ assignmentId }: { assignmentId: string }) {
+    const assignment = await getAssignmentWithDetails(assignmentId);
+
+    if (!assignment) {
+        notFound();
+    }
+
     return (
-        <div className='space-y-6'>
-            <div className='flex items-center gap-2'>
-                <Button variant='ghost' size='icon' asChild>
-                    <Link href='/teacher/assignments'>
-                        <ArrowLeft className='h-4 w-4' />
-                    </Link>
-                </Button>
-                <h1 className='text-3xl font-bold'>{assignment.title}</h1>
-                {assignment.isChallenge && (
-                    <Badge variant='secondary'>Challenge</Badge>
-                )}
-            </div>
+        <div className='flex items-center gap-2'>
+            <Button variant='ghost' size='icon' asChild>
+                <Link href='/teacher/assignments'>
+                    <ArrowLeft className='h-4 w-4' />
+                </Link>
+            </Button>
+            <h1 className='text-3xl font-bold'>{assignment.title}</h1>
+            {assignment.isPublished ? (
+                <Badge variant='default'>Dipublikasi</Badge>
+            ) : (
+                <Badge variant='outline'>Draft</Badge>
+            )}
+            {assignment.isChallenge && (
+                <Badge variant='secondary'>Challenge</Badge>
+            )}
+        </div>
+    );
+}
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Assignment Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className='space-y-4'>
-                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                            <div className='flex items-center gap-2'>
-                                <FileText className='h-4 w-4 text-muted-foreground' />
-                                <div>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Activity
-                                    </p>
-                                    <p className='font-medium'>
-                                        {assignment.activityTitle}
-                                    </p>
-                                </div>
-                            </div>
+// Komponen untuk menampilkan informasi tugas
+async function AssignmentInfo({ assignmentId }: { assignmentId: string }) {
+    const assignment = await getAssignmentWithDetails(assignmentId);
 
-                            <div className='flex items-center gap-2'>
-                                <Calendar className='h-4 w-4 text-muted-foreground' />
-                                <div>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Due Date
-                                    </p>
-                                    <p className='font-medium'>
-                                        {assignment.dueDate}
-                                    </p>
-                                </div>
-                            </div>
+    if (!assignment) {
+        return null;
+    }
 
-                            <div className='flex items-center gap-2'>
-                                <Clock className='h-4 w-4 text-muted-foreground' />
-                                <div>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Created At
-                                    </p>
-                                    <p className='font-medium'>
-                                        {assignment.createdAt}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className='flex items-center gap-2'>
-                                <User className='h-4 w-4 text-muted-foreground' />
-                                <div>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Rubric
-                                    </p>
-                                    <p className='font-medium'>
-                                        {assignment.rubric.name}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Detail Tugas</CardTitle>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div className='flex items-center gap-2'>
+                        <FileText className='h-4 w-4 text-muted-foreground' />
                         <div>
-                            <p className='text-sm text-muted-foreground mb-1'>
-                                Instructions
+                            <p className='text-sm text-muted-foreground'>
+                                {assignment.activityTitle
+                                    ? "Aktivitas"
+                                    : assignment.moduleTitle
+                                    ? "Modul"
+                                    : "Sumber"}
                             </p>
-                            <p>{assignment.description}</p>
+                            <p className='font-medium'>
+                                {assignment.activityTitle ||
+                                    assignment.moduleTitle ||
+                                    "-"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className='flex items-center gap-2'>
+                        <Calendar className='h-4 w-4 text-muted-foreground' />
+                        <div>
+                            <p className='text-sm text-muted-foreground'>
+                                Tenggat Waktu
+                            </p>
+                            <p className='font-medium'>
+                                {assignment.dueDate
+                                    ? formatDate(
+                                          assignment.dueDate,
+                                          "dd MMMM yyyy"
+                                      )
+                                    : "Tidak ada tenggat"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className='flex items-center gap-2'>
+                        <Clock className='h-4 w-4 text-muted-foreground' />
+                        <div>
+                            <p className='text-sm text-muted-foreground'>
+                                Dibuat Pada
+                            </p>
+                            <p className='font-medium'>
+                                {formatDate(
+                                    assignment.createdAt ?? "",
+                                    "dd MMMM yyyy"
+                                )}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className='flex items-center gap-2'>
+                        <User className='h-4 w-4 text-muted-foreground' />
+                        <div>
+                            <p className='text-sm text-muted-foreground'>
+                                Rubrik
+                            </p>
+                            <p className='font-medium'>
+                                {assignment.rubric?.name || "-"}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p className='text-sm text-muted-foreground mb-1'>
+                        Instruksi
+                    </p>
+                    <p>{assignment.instructions || "Tidak ada instruksi"}</p>
+                </div>
+
+                <div className='flex justify-end'>
+                    <Button variant='outline' asChild>
+                        <Link
+                            href={`/teacher/assignments/${assignmentId}/edit`}
+                        >
+                            Edit Tugas
+                        </Link>
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Komponen untuk menampilkan statistik submission
+async function SubmissionStats({ assignmentId }: { assignmentId: string }) {
+    const submissions = await getSubmissionsByAssignmentId(assignmentId);
+    const assignment = await getAssignmentWithDetails(assignmentId);
+
+    if (!assignment) {
+        return null;
+    }
+
+    const evaluatedSubmissions = submissions.filter(
+        (s) => s.status === "evaluated"
+    );
+    const pendingSubmissions = submissions.filter(
+        (s) => s.status === "pending"
+    );
+
+    const avgScore =
+        evaluatedSubmissions.length > 0
+            ? Math.round(
+                  evaluatedSubmissions.reduce(
+                      (acc, curr) => acc + (curr.score || 0),
+                      0
+                  ) / evaluatedSubmissions.length
+              )
+            : 0;
+
+    const highestScore =
+        evaluatedSubmissions.length > 0
+            ? Math.max(...evaluatedSubmissions.map((s) => s.score || 0))
+            : 0;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Statistik Pengumpulan</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className='space-y-4'>
+                    <div className='grid grid-cols-2 gap-4'>
+                        <div className='bg-card border rounded-lg p-4'>
+                            <p className='text-sm text-muted-foreground'>
+                                Total Pengumpulan
+                            </p>
+                            <p className='text-2xl font-bold'>
+                                {submissions.length}
+                            </p>
                         </div>
 
-                        <div className='flex justify-end'>
-                            <Button variant='outline' asChild>
-                                <Link
-                                    href={`/teacher/assignments/${params.id}/edit`}
-                                >
-                                    Edit Assignment
-                                </Link>
-                            </Button>
+                        <div className='bg-card border rounded-lg p-4'>
+                            <p className='text-sm text-muted-foreground'>
+                                Menunggu Review
+                            </p>
+                            <p className='text-2xl font-bold'>
+                                {pendingSubmissions.length}
+                            </p>
                         </div>
-                    </CardContent>
-                </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Submission Statistics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className='space-y-4'>
-                            <div className='grid grid-cols-2 gap-4'>
-                                <div className='bg-card border rounded-lg p-4'>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Total Submissions
-                                    </p>
-                                    <p className='text-2xl font-bold'>
-                                        {submissions.length}
-                                    </p>
-                                </div>
-
-                                <div className='bg-card border rounded-lg p-4'>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Pending Review
-                                    </p>
-                                    <p className='text-2xl font-bold'>
-                                        {
-                                            submissions.filter(
-                                                (s) => s.status === "pending"
-                                            ).length
-                                        }
-                                    </p>
-                                </div>
-
-                                <div className='bg-card border rounded-lg p-4'>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Average Score
-                                    </p>
-                                    <p className='text-2xl font-bold'>
-                                        {Math.round(
-                                            submissions
-                                                .filter(
-                                                    (s) =>
-                                                        s.status === "evaluated"
-                                                )
-                                                .reduce(
-                                                    (acc, curr) =>
-                                                        acc + (curr.score || 0),
-                                                    0
-                                                ) /
-                                                submissions.filter(
-                                                    (s) =>
-                                                        s.status === "evaluated"
-                                                ).length
-                                        )}
-                                    </p>
-                                </div>
-
-                                <div className='bg-card border rounded-lg p-4'>
-                                    <p className='text-sm text-muted-foreground'>
-                                        Highest Score
-                                    </p>
-                                    <p className='text-2xl font-bold'>
-                                        {Math.max(
-                                            ...submissions
-                                                .filter(
-                                                    (s) =>
-                                                        s.status === "evaluated"
-                                                )
-                                                .map((s) => s.score || 0)
-                                        )}
-                                    </p>
-                                </div>
-                            </div>
+                        <div className='bg-card border rounded-lg p-4'>
+                            <p className='text-sm text-muted-foreground'>
+                                Nilai Rata-rata
+                            </p>
+                            <p className='text-2xl font-bold'>
+                                {evaluatedSubmissions.length > 0
+                                    ? avgScore
+                                    : "-"}
+                            </p>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Student Submissions</CardTitle>
-                    <CardDescription>
-                        Review and evaluate student work
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
+                        <div className='bg-card border rounded-lg p-4'>
+                            <p className='text-sm text-muted-foreground'>
+                                Nilai Tertinggi
+                            </p>
+                            <p className='text-2xl font-bold'>
+                                {evaluatedSubmissions.length > 0
+                                    ? highestScore
+                                    : "-"}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Komponen untuk menampilkan daftar submission
+async function SubmissionsList({ assignmentId }: { assignmentId: string }) {
+    const submissions = await getSubmissionsByAssignmentId(assignmentId);
+    const assignment = await getAssignmentWithDetails(assignmentId);
+
+    if (!assignment) {
+        return null;
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Pengumpulan Siswa</CardTitle>
+                <CardDescription>
+                    Review dan evaluasi hasil kerja siswa
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {submissions.length > 0 ? (
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Student</TableHead>
-                                <TableHead>Submitted At</TableHead>
+                                <TableHead>Siswa</TableHead>
+                                <TableHead>Waktu Pengumpulan</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Score</TableHead>
+                                <TableHead>Nilai</TableHead>
                                 <TableHead className='text-right'>
-                                    Actions
+                                    Aksi
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
@@ -276,14 +411,14 @@ export default function AssignmentDetailPage({
                                                 variant='outline'
                                                 className='bg-green-50 text-green-700 border-green-200'
                                             >
-                                                Evaluated
+                                                Sudah Dinilai
                                             </Badge>
                                         ) : (
                                             <Badge
                                                 variant='outline'
                                                 className='bg-amber-50 text-amber-700 border-amber-200'
                                             >
-                                                Pending Review
+                                                Menunggu Review
                                             </Badge>
                                         )}
                                     </TableCell>
@@ -291,7 +426,8 @@ export default function AssignmentDetailPage({
                                         {submission.score !== null ? (
                                             <span>
                                                 {submission.score}/
-                                                {assignment.rubric.maxScore}
+                                                {assignment.rubric?.maxScore ||
+                                                    100}
                                             </span>
                                         ) : (
                                             <span className='text-muted-foreground'>
@@ -306,12 +442,12 @@ export default function AssignmentDetailPage({
                                             asChild
                                         >
                                             <Link
-                                                href={`/teacher/assignments/${params.id}/submissions/${submission.id}`}
+                                                href={`/teacher/assignments/${assignmentId}/submissions/${submission.id}`}
                                             >
                                                 {submission.status ===
                                                 "evaluated"
-                                                    ? "View"
-                                                    : "Evaluate"}
+                                                    ? "Lihat"
+                                                    : "Evaluasi"}
                                             </Link>
                                         </Button>
                                     </TableCell>
@@ -319,8 +455,59 @@ export default function AssignmentDetailPage({
                             ))}
                         </TableBody>
                     </Table>
-                </CardContent>
-            </Card>
+                ) : (
+                    <div className='text-center py-10'>
+                        <p className='text-muted-foreground'>
+                            Belum ada pengumpulan untuk tugas ini
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+// Halaman utama
+export default async function AssignmentDetailPage({
+    params,
+}: {
+    params: { id: string };
+}) {
+    const session = await getServerSession();
+
+    if (!session?.user) {
+        return (
+            <div className='flex flex-col items-center justify-center h-[60vh]'>
+                <h1 className='text-2xl font-bold mb-4'>Akses Ditolak</h1>
+                <p className='text-muted-foreground mb-6'>
+                    Anda harus login untuk melihat halaman ini
+                </p>
+                <Button asChild>
+                    <Link href='/login'>Login</Link>
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className='space-y-6'>
+            <Suspense fallback={<div>Memuat detail tugas...</div>}>
+                <AssignmentDetail assignmentId={params.id} />
+            </Suspense>
+
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                <Suspense fallback={<div>Memuat informasi tugas...</div>}>
+                    <AssignmentInfo assignmentId={params.id} />
+                </Suspense>
+
+                <Suspense fallback={<div>Memuat statistik pengumpulan...</div>}>
+                    <SubmissionStats assignmentId={params.id} />
+                </Suspense>
+            </div>
+
+            <Suspense fallback={<div>Memuat daftar pengumpulan...</div>}>
+                <SubmissionsList assignmentId={params.id} />
+            </Suspense>
         </div>
     );
 }

@@ -22,8 +22,26 @@ export const activitySchema = z.object({
     instructions: z
         .string()
         .min(20, { message: "Instruksi minimal 20 karakter" }),
+    scaffoldingSteps: z
+        .array(
+            z.object({
+                step: z.number(),
+                title: z.string(),
+                description: z.string(),
+            })
+        )
+        .optional(),
+    audioUrl: z.string().url().nullable().optional(),
+    videoUrl: z.string().url().nullable().optional(),
+    attachmentUrls: z.array(z.string().url()).optional(),
     isPublished: z.boolean().default(false),
     tags: z.array(z.string()).optional(),
 });
 
 export type ActivityFormValues = z.infer<typeof activitySchema>;
+
+export type ScaffoldingStep = {
+    step: number;
+    title: string;
+    description: string;
+};
