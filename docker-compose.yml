@@ -17,12 +17,18 @@ services:
     restart: unless-stopped
     networks:
       - nextjs_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   app:
     build: .
     container_name: nextjs_app
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - .env
     ports:
