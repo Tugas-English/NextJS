@@ -1,8 +1,8 @@
-import { getActivities } from "@/lib/actions/modules";
-import CreateModuleForm from "../_components/modules-create-form";
+import { getActivities } from '@/lib/actions/modules';
+import CreateModuleForm from '../_components/modules-create-form';
 
 export default async function CreateModulePage() {
-    const activitiesPromise = getActivities();
+  const activitiesPromise = getActivities();
 
-    return <CreateModuleForm activitiesPromise={activitiesPromise} />;
+  return <CreateModuleForm activitiesPromise={activitiesPromise} />;
 }

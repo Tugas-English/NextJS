@@ -1,332 +1,339 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 import {
-    FileText,
-    LifeBuoy,
-    MessageSquare,
-    Award,
-    BarChart2,
-    BookMarked,
-    Sparkles,
-    Settings,
-    LineChart,
-    BrainCircuit,
-} from "lucide-react";
+  FileText,
+  LifeBuoy,
+  MessageSquare,
+  Award,
+  BarChart2,
+  BookMarked,
+  Sparkles,
+  Settings,
+  LineChart,
+  BrainCircuit,
+  Clock,
+  CheckCircle,
+  Gauge,
+  FileEdit,
+  Repeat,
+  Filter,
+  Brain,
+  ChevronRight,
+  MessageCircle,
+  Plus,
+} from 'lucide-react';
 
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarSeparator,
-} from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from '@/components/ui/sidebar';
+import Link from 'next/link';
+import { User } from '@/lib/auth';
+import { SidebarFooterUser } from '@/app/teacher/_components/sidebar-footer';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
-type BadgeVariant = "default" | "destructive" | "outline";
+type BadgeVariant = 'default' | 'destructive' | 'outline';
 
 interface NavItem {
+  title: string;
+  url: string;
+  icon: React.ElementType;
+  isActive?: boolean;
+  badge?: string | { text: string; variant: BadgeVariant };
+  items?: Array<{
+    title: string;
+    url: string;
+    icon?: React.ElementType;
+    count?: number;
+  }>;
+}
+
+const data = {
+  navMain: [
+    {
+      title: 'Dashboard',
+      url: '/student',
+      icon: BarChart2,
+      isActive: true,
+    },
+    {
+      title: 'Kemajuan Belajar',
+      url: '/student/progress',
+      icon: LineChart,
+      badge: '14%',
+      items: [
+        {
+          title: 'Statistik HOTS',
+          url: '/student/progress/hots',
+          icon: Brain,
+        },
+        {
+          title: 'Pencapaian',
+          url: '/student/progress/achievements',
+          icon: Award,
+        },
+        {
+          title: 'Riwayat Aktivitas',
+          url: '/student/progress/history',
+          icon: Clock,
+        },
+      ],
+    },
+    {
+      title: 'Tugas',
+      url: '/student/assignments',
+      icon: FileText,
+      badge: {
+        text: '5',
+        variant: 'destructive' as const,
+      },
+      items: [
+        {
+          title: 'Tugas Aktif',
+          url: '/student/assignments/active',
+          icon: Clock,
+          count: 5,
+        },
+        {
+          title: 'Tugas Selesai',
+          url: '/student/assignments/completed',
+          icon: CheckCircle,
+        },
+        {
+          title: 'Perlu Revisi',
+          url: '/student/assignments/revisions',
+          icon: Repeat,
+          count: 2,
+        },
+      ],
+    },
+    {
+      title: 'Modul Pembelajaran',
+      url: '/student/modules',
+      icon: BookMarked,
+      badge: '12',
+      items: [
+        {
+          title: 'Semua Modul',
+          url: '/student/modules',
+          icon: BookMarked,
+        },
+        {
+          title: 'Filter HOTS',
+          url: '/student/modules/filter',
+          icon: Filter,
+        },
+      ],
+    },
+  ],
+  navSecondary: [
+    {
+      title: 'Forum Diskusi',
+      url: '/student/discussions',
+      icon: MessageSquare,
+      badge: {
+        text: 'Baru',
+        variant: 'default' as const,
+      },
+      items: [
+        {
+          title: 'Semua Diskusi',
+          url: '/student/discussions',
+          icon: MessageCircle,
+        },
+        {
+          title: 'Diskusi Saya',
+          url: '/student/discussions/mine',
+          icon: FileEdit,
+        },
+        {
+          title: 'Buat Diskusi',
+          url: '/student/discussions/create',
+          icon: Plus,
+        },
+      ],
+    },
+    {
+      title: 'Tantangan Mingguan',
+      url: '/student/challenges',
+      icon: Award,
+      badge: '3',
+      items: [
+        {
+          title: 'Tantangan Aktif',
+          url: '/student/challenges/active',
+          icon: Sparkles,
+        },
+        {
+          title: 'Leaderboard',
+          url: '/student/challenges/leaderboard',
+          icon: Gauge,
+        },
+        {
+          title: 'Riwayat',
+          url: '/student/challenges/history',
+          icon: Clock,
+        },
+      ],
+    },
+    {
+      title: 'Pengaturan',
+      url: '/student/settings',
+      icon: Settings,
+    },
+    {
+      title: 'Bantuan',
+      url: '/student/support',
+      icon: LifeBuoy,
+    },
+  ],
+};
+
+export function StudentSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  user?: User;
+}) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!mounted) {
+      setMounted(true);
+    }
+  }, [mounted]);
+
+  return (
+    <Sidebar {...props} collapsible="icon" variant="floating">
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="/student" className="flex items-center gap-2">
+                <div className="flex aspect-square size-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-sm">
+                  <BrainCircuit className="size-5" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="text-base font-semibold">HOTS English</span>
+                  <span className="text-muted-foreground text-xs">
+                    Portal Siswa
+                  </span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      <SidebarContent className="overflow-hidden">
+        <NavMain items={data.navMain} />
+        <SidebarSeparator />
+        <NavSecondary items={data.navSecondary} />
+      </SidebarContent>
+      <SidebarFooter>{user && <SidebarFooterUser user={user} />}</SidebarFooter>
+    </Sidebar>
+  );
+}
+
+function NavMain({ items }: { items: NavItem[] }) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+      <SidebarMenu>
+        {items.map((item) => (
+          <NavMainItem key={item.title} item={item} />
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
+}
+
+function NavSecondary({ items }: { items: NavItem[] }) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>Alat & Bantuan</SidebarGroupLabel>
+      <SidebarMenu>
+        {items.map((item) => (
+          <NavMainItem key={item.title} item={item} />
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
+}
+
+function NavMainItem({
+  item,
+}: {
+  item: {
     title: string;
     url: string;
     icon: React.ElementType;
     isActive?: boolean;
-    badge?: string | { text: string; variant: BadgeVariant };
+    badge?:
+      | string
+      | { text: string; variant: 'default' | 'destructive' | 'outline' };
     items?: Array<{
-        title: string;
-        url: string;
-        icon?: React.ElementType;
-        count?: number;
+      title: string;
+      url: string;
+      icon?: React.ElementType;
+      count?: number;
     }>;
-}
-
-interface SecondaryNavItem {
-    title: string;
-    url: string;
-    icon: React.ElementType;
-    badge?: { text: string; variant: BadgeVariant };
-}
-
-const data = {
-    user: {
-        name: "Lukas",
-        email: "lukas@example.com",
-        avatar: "/avatars/lukas.jpg",
-        role: "English Student",
-    },
-    navMain: [
-        {
-            title: "Dashboard",
-            url: "/students",
-            icon: BarChart2,
-            isActive: true,
-        },
-        {
-            title: "My Progress",
-            url: "/student/progress",
-            icon: LineChart,
-            badge: "14%",
-        },
-        {
-            title: "Assignments",
-            url: "/student/assignments",
-            icon: FileText,
-            badge: {
-                text: "5",
-                variant: "destructive" as const,
-            },
-        },
-        {
-            title: "Modules",
-            url: "/student/modules",
-            icon: BookMarked,
-            badge: "12",
-            items: [
-                {
-                    title: "Create Module",
-                    url: "/student/modules/create",
-                    icon: Sparkles,
-                },
-                {
-                    title: "All Modules",
-                    url: "/student/modules",
-                    icon: BookMarked,
-                },
-            ],
-        },
-    ],
-    navSecondary: [
-        {
-            title: "Discussions",
-            url: "/student/discussions",
-            icon: MessageSquare,
-            badge: {
-                text: "New",
-                variant: "default" as const,
-            },
-        },
-        {
-            title: "Weekly Challenges",
-            url: "/student/challenges",
-            icon: Award,
-        },
-        {
-            title: "Settings",
-            url: "/student/settings",
-            icon: Settings,
-        },
-        {
-            title: "Support",
-            url: "/student/support",
-            icon: LifeBuoy,
-        },
-    ],
-};
-
-export function StudentSidebar({
-    ...props
-}: React.ComponentProps<typeof Sidebar>) {
-    const [mounted, setMounted] = React.useState(false);
-
-    React.useEffect(() => {
-        if (!mounted) {
-            setMounted(true);
-        }
-    }, [mounted]);
-
-    return (
-        <Sidebar {...props}>
-            <SidebarHeader className='pb-2'>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size='lg' asChild>
-                            <a
-                                href='/student'
-                                className='flex items-center gap-2'
-                            >
-                                <div className='bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex aspect-square size-9 items-center justify-center rounded-lg shadow-sm'>
-                                    <BrainCircuit className='size-5' />
-                                </div>
-                                <div className='grid flex-1 text-left text-sm leading-tight'>
-                                    <span className='text-base font-semibold'>
-                                        HOTS English
-                                    </span>
-                                    <span className='text-xs text-muted-foreground'>
-                                        Student Portal
-                                    </span>
-                                </div>
-                            </a>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
-
-            <SidebarContent className='py-2 mx-4'>
-                <NavMain items={data.navMain} />
-                <SidebarSeparator className='my-2' />
-                <NavSecondary items={data.navSecondary} />
-            </SidebarContent>
-        </Sidebar>
-    );
-}
-
-function NavMain({ items }: { items: NavItem[] }) {
-    return (
-        <SidebarMenu>
-            {items.map((item) => (
-                <NavMainItem key={item.title} item={item} />
-            ))}
-        </SidebarMenu>
-    );
-}
-
-function NavMainItem({
-    item,
-}: {
-    item: {
-        title: string;
-        url: string;
-        icon: React.ElementType;
-        isActive?: boolean;
-        badge?:
-            | string
-            | { text: string; variant: "default" | "destructive" | "outline" };
-        items?: Array<{
-            title: string;
-            url: string;
-            icon?: React.ElementType;
-            count?: number;
-        }>;
-    };
+  };
 }) {
-    const [isOpen, setIsOpen] = React.useState(item.isActive || false);
-    const Icon = item.icon;
-
-    return (
-        <SidebarMenuItem>
-            <div className='flex w-full flex-col'>
-                <div className='flex items-center'>
-                    <SidebarMenuButton
-                        asChild
-                        className={cn(
-                            "flex-1",
-                            isOpen && item.items?.length && "font-medium"
-                        )}
-                    >
-                        <a
-                            href={item.url}
-                            className='flex items-center justify-between'
-                        >
-                            <div className='flex items-center gap-3'>
-                                <Icon className='size-4' />
-                                <span>{item.title}</span>
-                            </div>
-
-                            {item.badge &&
-                                (typeof item.badge === "string" ? (
-                                    <Badge
-                                        variant='outline'
-                                        className='ml-auto'
-                                    >
-                                        {item.badge}
-                                    </Badge>
-                                ) : (
-                                    <Badge
-                                        variant={item.badge.variant}
-                                        className='ml-auto'
-                                    >
-                                        {item.badge.text}
-                                    </Badge>
-                                ))}
-                        </a>
-                    </SidebarMenuButton>
-
-                    {item.items?.length && (
-                        <button
-                            onClick={() => setIsOpen(!isOpen)}
-                            className='flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent'
-                        >
-                            <svg
-                                width='15'
-                                height='15'
-                                viewBox='0 0 15 15'
-                                fill='none'
-                                xmlns='http://www.w3.org/2000/svg'
-                                className={cn(
-                                    "h-3 w-3 transition-transform",
-                                    isOpen ? "rotate-90" : ""
-                                )}
-                            >
-                                <path
-                                    d='M6 11L10 7.5L6 4'
-                                    stroke='currentColor'
-                                    strokeWidth='1.5'
-                                    strokeLinecap='round'
-                                    strokeLinejoin='round'
-                                />
-                            </svg>
-                        </button>
-                    )}
-                </div>
-
-                {isOpen && item.items?.length && (
-                    <div className='mt-1 ml-6 space-y-1'>
-                        {item.items.map((subItem) => (
-                            <a
-                                key={subItem.title}
-                                href={subItem.url}
-                                className='flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-accent'
-                            >
-                                <div className='flex items-center gap-2'>
-                                    {subItem.icon && (
-                                        <subItem.icon className='size-3.5' />
-                                    )}
-                                    <span>{subItem.title}</span>
-                                </div>
-                                {subItem.count !== undefined && (
-                                    <span className='text-xs text-muted-foreground'>
-                                        {subItem.count}
-                                    </span>
-                                )}
-                            </a>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </SidebarMenuItem>
-    );
-}
-
-function NavSecondary({ items }: { items: SecondaryNavItem[] }) {
-    return (
-        <div className='px-3 py-2'>
-            <div className='space-y-1'>
-                {items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                        <a
-                            key={item.title}
-                            href={item.url}
-                            className='flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent'
-                        >
-                            <div className='flex items-center gap-2'>
-                                <Icon className='size-4 text-muted-foreground' />
-                                <span className='text-sm'>{item.title}</span>
-                            </div>
-                            {item.badge && (
-                                <Badge
-                                    variant={item.badge.variant}
-                                    className='text-xs'
-                                >
-                                    {item.badge.text}
-                                </Badge>
-                            )}
-                        </a>
-                    );
-                })}
-            </div>
-        </div>
-    );
+  return (
+    <Collapsible
+      key={item.title}
+      asChild
+      defaultOpen={item.isActive}
+      className="group/collapsible"
+    >
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <Link href={item.url}>
+            <SidebarMenuButton
+              tooltip={item.title}
+              className="hover:cursor-pointer"
+            >
+              {item.icon && <item.icon />}
+              <span>{item.title}</span>
+              {item.items?.length && (
+                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+              )}
+            </SidebarMenuButton>
+          </Link>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {item.items?.length && (
+            <SidebarMenuSub>
+              {item.items?.map((subItem) => (
+                <SidebarMenuSubItem key={subItem.title}>
+                  <SidebarMenuSubButton asChild>
+                    <Link href={subItem.url}>
+                      <span>{subItem.title}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              ))}
+            </SidebarMenuSub>
+          )}
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
 }

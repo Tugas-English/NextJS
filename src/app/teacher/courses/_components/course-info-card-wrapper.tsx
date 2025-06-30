@@ -1,18 +1,18 @@
-import { getCourseById } from "@/lib/actions/courses";
-import { CourseInfoCard } from "./course-info-card";
+import { getCourseById } from '@/lib/actions/courses';
+import { CourseInfoCard } from './course-info-card';
 
 interface CourseInfoCardWrapperProps {
-    courseId: string;
+  courseId: string;
 }
 
 export async function CourseInfoCardWrapper({
-    courseId,
+  courseId,
 }: CourseInfoCardWrapperProps) {
-    const course = await getCourseById(courseId);
+  const course = await getCourseById(courseId);
 
-    if (!course) {
-        return null;
-    }
+  if (!course) {
+    return null;
+  }
 
-    return <CourseInfoCard course={course} />;
+  return <CourseInfoCard course={course} />;
 }

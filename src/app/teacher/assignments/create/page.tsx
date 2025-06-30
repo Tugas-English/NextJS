@@ -1,18 +1,18 @@
-import CreateAssignmentForm from "../_components/assignments-create-form";
+import CreateAssignmentForm from '../_components/assignments-create-form';
 import {
-    getActivities,
-    getCourses,
-    getModules,
-    getRubrics,
-} from "@/lib/actions/assignments";
+  getActivities,
+  getCourses,
+  getModules,
+  getRubrics,
+} from '@/lib/actions/assignments';
 
 export default async function CreateAssignmentPage() {
-    const promises = Promise.all([
-        getActivities(),
-        getModules(),
-        getRubrics(),
-        getCourses(),
-    ]);
+  const promises = Promise.all([
+    getActivities(),
+    getModules(),
+    getRubrics(),
+    getCourses(),
+  ]);
 
-    return <CreateAssignmentForm promises={promises} />;
+  return <CreateAssignmentForm promises={promises} />;
 }
