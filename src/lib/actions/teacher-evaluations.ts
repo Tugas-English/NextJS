@@ -5,6 +5,7 @@ import { evaluations } from '@/db/schema';
 import { nanoid } from 'nanoid';
 import { revalidatePath } from 'next/cache';
 import { safeJsonStringify } from '@/lib/utils';
+import { eq } from 'drizzle-orm';
 
 interface SaveEvaluationParams {
   submissionId: string;
@@ -44,7 +45,7 @@ export async function saveEvaluation({
       await db
         .update(evaluations)
         .set(evaluationData)
-        .where(evaluations.id === evaluationId);
+        .where(eq(evaluations.id, evaluationId));
     } else {
       // Create new evaluation
       await db.insert(evaluations).values({

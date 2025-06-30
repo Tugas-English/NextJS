@@ -41,10 +41,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Save, Trash } from 'lucide-react';
 import { updateActivity } from '@/lib/actions/activities';
-import { Activitie } from '@/db/schema';
+import { Activity } from '@/db/schema';
 
 interface ActivityEditFormProps {
-  activity: Activitie;
+  activity: Activity;
   userId?: string;
 }
 
@@ -64,8 +64,13 @@ export function ActivityEditForm({ activity, userId }: ActivityEditFormProps) {
   const defaultValues: ActivityFormValues = {
     title: activity.title,
     description: activity.description || '',
-    skill: activity.skill,
-    hotsType: activity.hotsType,
+    skill: activity.skill as 'reading' | 'listening' | 'writing' | 'speaking',
+    hotsType: activity.hotsType as
+      | 'analyze'
+      | 'evaluate'
+      | 'create'
+      | 'problem-solve'
+      | 'infer',
     difficulty: activity.difficulty,
     estimatedDuration: activity.estimatedDuration || 30,
     content: activity.content || '',
@@ -74,7 +79,7 @@ export function ActivityEditForm({ activity, userId }: ActivityEditFormProps) {
     audioUrl: activity.audioUrl || '',
     videoUrl: activity.videoUrl || '',
     attachmentUrls: (activity.attachmentUrls as string[]) || [],
-    isPublished: activity.isPublished,
+    isPublished: activity.isPublished as boolean,
     tags: (activity.tags as string[]) || [],
   };
 

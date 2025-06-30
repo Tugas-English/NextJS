@@ -4,12 +4,15 @@ import { ActivityEditForm } from '../../_components/acitivity-edit-form';
 import { getServerSession } from '@/lib/session';
 
 type ActivityEditProps = {
-  params: { id: string };
+  params: Promise<{
+    id: string;
+  }>;
 };
 
 export default async function ActivityEditPage({ params }: ActivityEditProps) {
+  const { id } = await params;
   const session = await getServerSession();
-  const activity = await getActivityById(params.id);
+  const activity = await getActivityById(id);
 
   if (!activity) {
     notFound();

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { getStudentModules } from '@/lib/actions/student-modules';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -137,24 +138,6 @@ export default async function ModulesList({
           </Card>
         ))}
       </div>
-
-      {pageCount > 1 && (
-        <div className="mt-8 flex justify-center">
-          <Pagination
-            currentPage={page}
-            totalPages={pageCount}
-            baseUrl="/student/modules"
-            searchParams={{
-              search,
-              skill,
-              hotsType,
-              difficulty: difficulty
-                ? `${difficulty[0]}-${difficulty[1]}`
-                : undefined,
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

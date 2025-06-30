@@ -1,6 +1,6 @@
 'use client';
 
-import type { Activitie } from '@/db/schema';
+import type { Activity } from '@/db/schema';
 import type { Row } from '@tanstack/react-table';
 import { Loader, Trash } from 'lucide-react';
 import * as React from 'react';
@@ -32,7 +32,7 @@ import { deleteActivities } from '@/lib/actions/activities';
 
 interface DeleteActivitieDialogProps
   extends React.ComponentPropsWithoutRef<typeof Dialog> {
-  activities: Row<Activitie>['original'][];
+  activities: Row<Activity>['original'][];
   showTrigger?: boolean;
   onSuccess?: () => void;
 }

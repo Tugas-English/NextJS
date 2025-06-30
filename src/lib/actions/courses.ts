@@ -374,7 +374,7 @@ interface TopStudent {
   email: string;
   courseTitle: string;
   score: number;
-  avatar?: string;
+  avatar?: string | null;
 }
 
 interface RecentAssignment {
@@ -497,7 +497,7 @@ export async function getTopStudents(
           avatar: student.image,
         };
       })
-      .sort((a, b) => b.score - a.score) // Urutkan berdasarkan nilai tertinggi
+      .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
     return topStudents;

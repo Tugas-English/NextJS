@@ -181,18 +181,6 @@ export function getRubricsTableColumns({
               >
                 Hapus
               </DropdownMenuItem>
-              {!row.original.isDefault && (
-                <DropdownMenuItem
-                  onClick={() =>
-                    onRowAction({
-                      variant: 'set-default',
-                      row,
-                    })
-                  }
-                >
-                  Jadikan Default
-                </DropdownMenuItem>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

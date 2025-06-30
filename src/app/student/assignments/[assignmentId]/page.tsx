@@ -1,13 +1,3 @@
-import { db } from '@/db';
-import {
-  assignments,
-  activities,
-  rubrics,
-  submissions,
-  evaluations,
-  user,
-} from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
 import { notFound, redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
 import { Button } from '@/components/ui/button';
@@ -33,197 +23,125 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { formatDistanceToNow, isPast, format } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import SubmissionForm from './_components/submission-form';
-import SubmissionResult from './_components/submission-result';
+import SubmissionForm from '../_components/submission-form';
+import SubmissionResult from '../_components/submission-result';
+import { getAssignmentDetail } from '@/lib/actions/student-assignments';
+import { Metadata } from 'next';
 
 interface AssignmentDetailPageProps {
-  params: {
+  params: Promise<{
     assignmentId: string;
-  };
+  }>;
 }
 
-function safelyParseJSON(jsonString: any, defaultValue: any = {}) {
-  if (typeof jsonString === 'object' && jsonString !== null) {
-    return jsonString;
+export async function generateMetadata({
+  params,
+}: AssignmentDetailPageProps): Promise<Metadata> {
+  const { assignmentId } = await params;
+  const session = await getServerSession();
+
+  if (!session?.user) {
+    return {
+      title: 'Login Diperlukan | Sistem Pembelajaran',
+      description: 'Silakan login untuk mengakses halaman ini.',
+    };
   }
 
-  if (!jsonString || typeof jsonString !== 'string') {
-    return defaultValue;
+  const assignmentDetail = await getAssignmentDetail(
+    assignmentId,
+    session.user.id,
+  );
+
+  if (!assignmentDetail) {
+    return {
+      title: 'Tugas Tidak Ditemukan | Sistem Pembelajaran',
+      description: 'Tugas yang Anda cari tidak dapat ditemukan.',
+    };
   }
 
-  try {
-    // Coba parse JSON string biasa
-    return JSON.parse(jsonString);
-  } catch (e) {
-    // Jika gagal, coba parse JSON string dengan double quotes
-    try {
-      // Ganti semua double quotes yang di-escape
-      const fixedString = jsonString.replace(/""/g, '"');
-      return JSON.parse(fixedString);
-    } catch (e2) {
-      console.error('Failed to parse JSON:', e2);
-      return defaultValue;
-    }
+  const { assignment, activity, teacher, status } = assignmentDetail;
+
+  let statusText = '';
+  switch (status) {
+    case 'not_submitted':
+      statusText = 'Belum Dikerjakan';
+      break;
+    case 'draft':
+      statusText = 'Draft Tersimpan';
+      break;
+    case 'submitted':
+      statusText = 'Menunggu Penilaian';
+      break;
+    case 'completed':
+      statusText = 'Selesai';
+      break;
+    case 'needs_revision':
+      statusText = 'Perlu Revisi';
+      break;
+    case 'overdue':
+      statusText = 'Terlambat';
+      break;
   }
+  const keywordsList: string[] = ['tugas', 'pembelajaran'];
+
+  if (activity?.skill) keywordsList.push(activity.skill);
+  if (activity?.hotsType) keywordsList.push(activity.hotsType);
+  keywordsList.push(statusText.toLowerCase());
+
+  return {
+    title: `${assignment.title} | Tugas`,
+    description: 'Detail dan pengumpulan tugas pembelajaran.',
+    keywords: keywordsList,
+    authors: teacher ? [{ name: teacher.name || 'Guru' }] : undefined,
+    openGraph: {
+      title: assignment.title,
+      description: `Tugas: ${assignment.title} - Status: ${statusText}`,
+      type: 'article',
+    },
+  };
 }
 
 export default async function AssignmentDetailPage({
   params,
 }: AssignmentDetailPageProps) {
-  const { assignmentId } = params;
+  const { assignmentId } = await params;
   const session = await getServerSession();
 
   if (!session?.user) {
     return redirect('/login');
   }
 
-  // Ambil detail tugas
-  const assignment = await db.query.assignments.findFirst({
-    where: and(
-      eq(assignments.id, assignmentId),
-      eq(assignments.isPublished, true),
-    ),
-  });
+  const assignmentDetail = await getAssignmentDetail(
+    assignmentId,
+    session.user.id,
+  );
 
-  if (!assignment) {
+  if (!assignmentDetail) {
     notFound();
   }
 
-  // Ambil detail aktivitas terkait
-  const activity = assignment.activityId
-    ? await db.query.activities.findFirst({
-        where: eq(activities.id, assignment.activityId),
-      })
-    : null;
-
-  // Ambil rubrik penilaian
-  const rubric = await db.query.rubrics.findFirst({
-    where: eq(rubrics.id, assignment.rubricId),
-  });
-
-  // Ambil informasi pembuat tugas
-  const teacher = assignment.assignedBy
-    ? await db
-        .select({
-          id: user.id,
-          name: user.name,
-          image: user.image,
-        })
-        .from(user)
-        .where(eq(user.id, assignment.assignedBy))
-        .then((res) => res[0])
-    : null;
-
-  // Ambil submission siswa
-  const studentSubmissions = await db
-    .select()
-    .from(submissions)
-    .where(
-      and(
-        eq(submissions.assignmentId, assignmentId),
-        eq(submissions.studentId, session.user.id),
-      ),
-    )
-    .orderBy(desc(submissions.submittedAt));
-
-  const latestSubmission = studentSubmissions[0] || null;
-
-  // Ambil evaluasi untuk submission terbaru
-  const evaluation = latestSubmission
-    ? await db
-        .select()
-        .from(evaluations)
-        .where(eq(evaluations.submissionId, latestSubmission.id))
-        .then((res) => res[0])
-    : null;
-
-  // Parse data JSON dengan aman
-  let rubricCriteria = {};
-  if (rubric?.criteria) {
-    try {
-      rubricCriteria = safelyParseJSON(rubric.criteria);
-      console.log('Successfully parsed rubric criteria:', rubricCriteria);
-    } catch (e) {
-      console.error('Error parsing rubric criteria:', e);
-    }
-  }
-
-  let evaluationScores = {};
-  if (evaluation?.scores) {
-    try {
-      evaluationScores = safelyParseJSON(evaluation.scores);
-    } catch (e) {
-      console.error('Error parsing evaluation scores:', e);
-    }
-  }
-
-  let evaluationFeedback = {};
-  if (evaluation?.criteriaFeedback) {
-    try {
-      evaluationFeedback = safelyParseJSON(evaluation.criteriaFeedback);
-    } catch (e) {
-      console.error('Error parsing evaluation feedback:', e);
-    }
-  }
-
-  let submissionChecklist = [];
-  if (latestSubmission?.checklist) {
-    try {
-      submissionChecklist = safelyParseJSON(latestSubmission.checklist, []);
-    } catch (e) {
-      console.error('Error parsing submission checklist:', e);
-    }
-  }
-
-  // Log untuk debugging
-  console.log('Rubric:', rubric);
-  console.log('Rubric Criteria (parsed):', rubricCriteria);
-  console.log('Evaluation Scores (parsed):', evaluationScores);
-
-  // Tentukan status tugas
-  const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
-  const isOverdue = dueDate && isPast(dueDate);
-  const hasSubmission = !!latestSubmission;
-  const isDraft = latestSubmission?.isDraft;
-  const hasEvaluation = !!evaluation;
-
-  let status = 'not_submitted';
-  if (hasSubmission) {
-    if (isDraft) {
-      status = 'draft';
-    } else if (hasEvaluation) {
-      // Cek apakah perlu revisi
-      const totalScore = evaluationScores.total || 0;
-      const needsRevision =
-        totalScore < 70 ||
-        (evaluation?.generalFeedback &&
-          evaluation.generalFeedback.toLowerCase().includes('revisi'));
-
-      status = needsRevision ? 'needs_revision' : 'completed';
-    } else {
-      status = 'submitted';
-    }
-  } else if (isOverdue) {
-    status = 'overdue';
-  }
-
-  // Cek apakah masih bisa mengumpulkan tugas
-  const canSubmit =
-    status === 'not_submitted' ||
-    status === 'draft' ||
-    (status === 'needs_revision' && assignment.allowResubmission) ||
-    (status === 'submitted' && !isOverdue);
-
-  // Cek jumlah submission
-  const submissionCount = studentSubmissions.filter(
-    (sub) => !sub.isDraft,
-  ).length;
-  const maxResubmissionsReached =
-    assignment.allowResubmission &&
-    assignment.maxResubmissions !== null &&
-    submissionCount >= assignment.maxResubmissions;
+  const {
+    assignment,
+    activity,
+    rubric,
+    teacher,
+    latestSubmission,
+    evaluation,
+    rubricCriteria,
+    evaluationScores,
+    evaluationFeedback,
+    submissionChecklist,
+    status,
+    dueDate,
+    isOverdue,
+    hasEvaluation,
+    canSubmit,
+    submissionCount,
+    maxResubmissionsReached,
+    studentSubmissions,
+  } = assignmentDetail;
 
   return (
     <div className="container py-6">

@@ -1,13 +1,13 @@
 'use client';
 
-import type { Activitie } from '@/db/schema';
+import type { Activity } from '@/db/schema';
 import type { Table } from '@tanstack/react-table';
 import { Download } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
 interface ActivitiesTableToolbarActionsProps {
-  table: Table<Activitie>;
+  table: Table<Activity>;
 }
 
 export function TasksTableToolbarActions({

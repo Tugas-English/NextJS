@@ -195,16 +195,6 @@ export function getCoursesTableColumns({
               <DropdownMenuItem
                 onClick={() =>
                   onRowAction({
-                    variant: isActive ? 'deactivate' : 'activate',
-                    row,
-                  })
-                }
-              >
-                {isActive ? 'Nonaktifkan' : 'Aktifkan'}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  onRowAction({
                     variant: 'delete',
                     row,
                   })

@@ -6,7 +6,8 @@ import { nanoid } from 'nanoid';
 import { ModuleFormValues } from '../schemas/module';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from '../session';
-import { count, eq, sql } from 'drizzle-orm';
+import { asc, count, desc, eq, sql } from 'drizzle-orm';
+import { activities as activitiesTable } from '@/db/schema';
 
 export type GetModulesOptions = {
   page?: number;
@@ -256,5 +257,137 @@ export async function deleteModules({ ids }: { ids: string[] }) {
   } catch (error) {
     console.error('Error deleting modules:', error);
     return { error: 'Gagal menghapus modul' };
+  }
+}
+
+export async function getModuleById(moduleId: string) {
+  try {
+    const moduleData = await db.query.modules.findFirst({
+      where: eq(modules.id, moduleId),
+      with: {
+        creator: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return moduleData;
+  } catch (error) {
+    console.error('Error fetching module:', error);
+    return null;
+  }
+}
+
+export async function getModuleActivities(moduleId: string) {
+  try {
+    const moduleActivitiesData = await db
+      .select({
+        id: moduleActivities.id,
+        activityId: moduleActivities.activityId,
+        order: moduleActivities.order,
+        isRequired: moduleActivities.isRequired,
+        title: activitiesTable.title,
+        skill: activitiesTable.skill,
+        hotsType: activitiesTable.hotsType,
+        difficulty: activitiesTable.difficulty,
+        estimatedDuration: activitiesTable.estimatedDuration,
+      })
+      .from(moduleActivities)
+      .innerJoin(
+        activitiesTable,
+        eq(moduleActivities.activityId, activitiesTable.id),
+      )
+      .where(eq(moduleActivities.moduleId, moduleId))
+      .orderBy(asc(moduleActivities.order));
+
+    return moduleActivitiesData;
+  } catch (error) {
+    console.error('Error fetching module activities:', error);
+    return [];
+  }
+}
+
+export async function getAvailableActivities(moduleId: string) {
+  try {
+    const existingActivityIds = await db
+      .select({ activityId: moduleActivities.activityId })
+      .from(moduleActivities)
+      .where(eq(moduleActivities.moduleId, moduleId));
+
+    const existingIds = existingActivityIds.map((item) => item.activityId);
+
+    const availableActivities = await db.query.activities.findMany({
+      where:
+        existingIds.length > 0
+          ? sql`${activitiesTable.id} NOT IN ${existingIds}`
+          : undefined,
+      columns: {
+        id: true,
+        title: true,
+        skill: true,
+        hotsType: true,
+        difficulty: true,
+        estimatedDuration: true,
+      },
+      orderBy: [desc(activitiesTable.createdAt)],
+    });
+
+    return availableActivities;
+  } catch (error) {
+    console.error('Error fetching available activities:', error);
+    return [];
+  }
+}
+
+export async function getStudentProgress(moduleId: string) {
+  try {
+    return [
+      {
+        id: '1',
+        name: 'Andi Pratama',
+        progress: 100,
+        completedActivities: 5,
+        totalActivities: 5,
+        averageScore: 92,
+      },
+      {
+        id: '2',
+        name: 'Budi Santoso',
+        progress: 80,
+        completedActivities: 4,
+        totalActivities: 5,
+        averageScore: 85,
+      },
+      {
+        id: '3',
+        name: 'Citra Dewi',
+        progress: 100,
+        completedActivities: 5,
+        totalActivities: 5,
+        averageScore: 90,
+      },
+      {
+        id: '4',
+        name: 'Deni Kurniawan',
+        progress: 60,
+        completedActivities: 3,
+        totalActivities: 5,
+        averageScore: 78,
+      },
+      {
+        id: '5',
+        name: 'Eka Putri',
+        progress: 40,
+        completedActivities: 2,
+        totalActivities: 5,
+        averageScore: 82,
+      },
+    ];
+  } catch (error) {
+    console.error('Error fetching student progress:', error);
+    return [];
   }
 }

@@ -1,8 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 import { db } from '@/db';
 import { modules, moduleActivities, activities, user } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,17 +20,17 @@ import {
 import { cn } from '@/lib/utils';
 
 interface ModuleDetailPageProps {
-  params: {
+  params: Promise<{
     moduleId: string;
-  };
+  }>;
 }
 
 export default async function ModuleDetailPage({
   params,
 }: ModuleDetailPageProps) {
-  const { moduleId } = params;
+  // Await the params promise
+  const { moduleId } = await params;
 
-  // Ambil detail modul
   const moduleData = await db.query.modules.findFirst({
     where: and(eq(modules.id, moduleId), eq(modules.isPublished, true)),
   });
@@ -39,14 +39,12 @@ export default async function ModuleDetailPage({
     notFound();
   }
 
-  // Ambil aktivitas modul
   const moduleActivitiesData = await db
     .select()
     .from(moduleActivities)
     .where(eq(moduleActivities.moduleId, moduleId))
     .orderBy(moduleActivities.order);
 
-  // Ambil detail aktivitas
   const activityIds = moduleActivitiesData.map((ma) => ma.activityId);
 
   const activitiesData =
@@ -67,7 +65,6 @@ export default async function ModuleDetailPage({
           .where(eq(activities.isPublished, true))
       : [];
 
-  // Ambil informasi pembuat modul
   const creator = moduleData.createdBy
     ? await db
         .select({
@@ -79,7 +76,6 @@ export default async function ModuleDetailPage({
         .then((res) => res[0])
     : null;
 
-  // Gabungkan data aktivitas dengan detail
   const moduleActivitiesList = moduleActivitiesData
     .map((ma) => {
       const activityDetail = activitiesData.find((a) => a.id === ma.activityId);
@@ -90,7 +86,6 @@ export default async function ModuleDetailPage({
     })
     .filter((ma) => ma.activity && ma.activity.isPublished);
 
-  // Hitung total durasi estimasi
   const totalDuration = moduleActivitiesList.reduce((total, ma) => {
     return total + (ma.activity?.estimatedDuration || 0);
   }, 0);

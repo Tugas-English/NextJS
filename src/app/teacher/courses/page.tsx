@@ -279,17 +279,15 @@ async function TopStudentsTab() {
   );
 }
 
-// Komponen untuk menampilkan tugas terbaru
 async function RecentAssignmentsTab() {
   const session = await getServerSession();
   const userId = session?.user?.id;
 
-  let recentAssignments = [];
+  let recentAssignments: any[] = [];
   try {
     recentAssignments = await getRecentAssignments(5, userId);
   } catch (error) {
     console.error('Error fetching recent assignments:', error);
-    // Fallback ke data kosong jika terjadi error
   }
 
   return (

@@ -19,12 +19,16 @@ import { AssignmentsTab } from '../_components/assignments-tab';
 import { ModulesTab } from '../_components/modules-tab';
 import { AnalyticsTabWrapper } from '../_components/analytics-tab-wrapper';
 
+interface CourseDetailPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
 export default async function CourseDetailPage({
   params,
-}: {
-  params: { id: string };
-}) {
-  const course = await getCourseById(params.id);
+}: CourseDetailPageProps) {
+  const { id } = await params;
+  const course = await getCourseById(id);
 
   if (!course) {
     notFound();
@@ -52,11 +56,11 @@ export default async function CourseDetailPage({
       </div>
 
       <Suspense fallback={<div>Memuat statistik...</div>}>
-        <CourseStatsCards courseId={params.id} />
+        <CourseStatsCards courseId={id} />
       </Suspense>
 
       <Suspense fallback={<div>Memuat informasi kelas...</div>}>
-        <CourseInfoCardWrapper courseId={params.id} />
+        <CourseInfoCardWrapper courseId={id} />
       </Suspense>
 
       <Tabs defaultValue="students">
@@ -81,25 +85,25 @@ export default async function CourseDetailPage({
 
         <TabsContent value="students" className="mt-6">
           <Suspense fallback={<div>Memuat data siswa...</div>}>
-            <StudentsTab courseId={params.id} />
+            <StudentsTab courseId={id} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="assignments" className="mt-6">
           <Suspense fallback={<div>Memuat data tugas...</div>}>
-            <AssignmentsTab courseId={params.id} />
+            <AssignmentsTab courseId={id} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="modules" className="mt-6">
           <Suspense fallback={<div>Memuat data modul...</div>}>
-            <ModulesTab courseId={params.id} />
+            <ModulesTab courseId={id} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">
           <Suspense fallback={<div>Memuat data analisis...</div>}>
-            <AnalyticsTabWrapper courseId={params.id} />
+            <AnalyticsTabWrapper courseId={id} />
           </Suspense>
         </TabsContent>
       </Tabs>

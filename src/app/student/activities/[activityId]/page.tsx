@@ -1,7 +1,3 @@
-import { db } from '@/db';
-import { activities, user, assignments } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,93 +19,121 @@ import {
 import { cn } from '@/lib/utils';
 import { getServerSession } from '@/lib/session';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  getActivityById,
+  getActivityCreator,
+  getRelatedAssignments,
+} from '@/lib/actions/activities-student';
+import { Metadata } from 'next';
+import { LoginRequired, RoleRestricted } from '@/components/restricted-access';
+import { ActivityNotFound } from '@/components/not-found';
+import { safeJsonParseactivities } from '@/utils';
 
 interface ActivityDetailPageProps {
-  params: {
+  params: Promise<{
     activityId: string;
-  };
+  }>;
 }
 
-function safeJsonParse(value: any, fallback: any = []) {
-  if (!value) return fallback;
+export async function generateMetadata({
+  params,
+}: ActivityDetailPageProps): Promise<Metadata> {
+  const { activityId } = await params;
 
-  if (typeof value === 'object') return value;
+  try {
+    const activityData = await getActivityById(activityId);
 
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value);
-    } catch (error) {
-      console.error('Error parsing JSON:', error);
-
-      if (value.startsWith('http')) {
-        return [{ url: value, name: 'Lampiran' }];
-      }
-
-      return fallback;
+    if (!activityData) {
+      return {
+        title: 'Aktivitas Tidak Ditemukan',
+        description: 'Aktivitas yang Anda cari tidak ditemukan.',
+      };
     }
-  }
 
-  return fallback;
+    const creator = activityData.createdBy
+      ? await getActivityCreator(activityData.createdBy)
+      : null;
+
+    return {
+      title: `${activityData.title} | Aktivitas Pembelajaran`,
+      description:
+        activityData.description ||
+        'Aktivitas pembelajaran interaktif untuk mengembangkan keterampilan berpikir kritis.',
+      keywords: [
+        activityData.skill,
+        activityData.hotsType,
+        'pembelajaran',
+        'aktivitas',
+        'pendidikan',
+        'HOTS',
+        'keterampilan berpikir',
+      ].filter(Boolean),
+      authors: creator ? [{ name: creator.name }] : undefined,
+      openGraph: {
+        title: activityData.title,
+        description:
+          activityData.description || 'Aktivitas pembelajaran interaktif',
+        type: 'article',
+        authors: creator ? [creator.name] : undefined,
+      },
+      twitter: {
+        card: 'summary',
+        title: activityData.title,
+        description:
+          activityData.description || 'Aktivitas pembelajaran interaktif',
+      },
+    };
+  } catch (error) {
+    return {
+      title: 'Error | Aktivitas Pembelajaran',
+      description: 'Terjadi kesalahan saat memuat aktivitas.',
+    };
+  }
 }
 
 export default async function ActivityDetailPage({
   params,
 }: ActivityDetailPageProps) {
-  const { activityId } = params;
+  const { activityId } = await params;
   const session = await getServerSession();
 
-  if (!session?.user) {
+  if (session?.user.role !== 'student') {
     return (
-      <div className="container py-12">
-        <Alert>
-          <AlertTitle>Akses Dibatasi</AlertTitle>
-          <AlertDescription>
-            Anda harus login untuk melihat aktivitas ini.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <RoleRestricted
+        description="Halaman ini khusus untuk siswa."
+        redirectUrl="/dashboard"
+      />
     );
   }
 
-  // Ambil detail aktivitas
-  const activityData = await db.query.activities.findFirst({
-    where: and(eq(activities.id, activityId), eq(activities.isPublished, true)),
-  });
-
-  if (!activityData) {
-    notFound();
+  if (!session?.user) {
+    return <LoginRequired />;
   }
 
-  // Ambil informasi pembuat aktivitas
-  const creator = activityData.createdBy
-    ? await db
-        .select({
-          name: user.name,
-          image: user.image,
-        })
-        .from(user)
-        .where(eq(user.id, activityData.createdBy))
-        .then((res) => res[0])
+  const activityData = await getActivityById(activityId);
+
+  if (!activityData) {
+    <ActivityNotFound
+      backUrl="/student/modules"
+      backLabel="Kembali ke Modul"
+    />;
+  }
+
+  const creator = activityData?.createdBy
+    ? await getActivityCreator(activityData.createdBy)
     : null;
 
-  // Cek apakah ada tugas terkait aktivitas ini
-  const relatedAssignments = await db
-    .select()
-    .from(assignments)
-    .where(eq(assignments.activityId, activityId))
-    .limit(1);
-
+  const relatedAssignments = await getRelatedAssignments(activityId);
   const hasAssignment = relatedAssignments.length > 0;
 
-  // Parse JSON data dengan aman
-  const scaffoldingSteps = safeJsonParse(activityData.scaffoldingSteps, []);
-  const attachmentUrls = safeJsonParse(activityData.attachmentUrls, []);
-
-  console.log('Scaffolding Steps:', activityData.scaffoldingSteps);
-  console.log('Parsed Scaffolding Steps:', scaffoldingSteps);
-  console.log('Attachment URLs:', activityData.attachmentUrls);
-  console.log('Parsed Attachment URLs:', attachmentUrls);
+  const scaffoldingSteps = safeJsonParseactivities(
+    activityData?.scaffoldingSteps,
+    [],
+  );
+  const attachmentUrls = safeJsonParseactivities(
+    activityData?.attachmentUrls,
+    [],
+  );
 
   return (
     <div className="container py-6">
@@ -124,47 +148,47 @@ export default async function ActivityDetailPage({
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="space-y-4 md:col-span-2">
             <h1 className="text-2xl font-bold md:text-3xl">
-              {activityData.title}
+              {activityData?.title}
             </h1>
 
-            {activityData.description && (
+            {activityData?.description && (
               <p className="text-muted-foreground">
-                {activityData.description}
+                {activityData?.description}
               </p>
             )}
 
             <div className="flex flex-wrap gap-2">
-              {activityData.skill && (
+              {activityData?.skill && (
                 <Badge variant="outline" className="capitalize">
-                  {activityData.skill}
+                  {activityData?.skill}
                 </Badge>
               )}
-              {activityData.hotsType && (
+              {activityData?.hotsType && (
                 <Badge variant="secondary" className="capitalize">
                   <Brain className="mr-1 h-3 w-3" />
-                  {activityData.hotsType}
+                  {activityData?.hotsType}
                 </Badge>
               )}
-              {activityData.difficulty && (
+              {activityData?.difficulty && (
                 <Badge
                   className={cn(
                     'capitalize',
-                    activityData.difficulty <= 2
+                    activityData?.difficulty <= 2
                       ? 'bg-green-500'
-                      : activityData.difficulty <= 4
+                      : activityData?.difficulty <= 4
                         ? 'bg-yellow-500'
                         : 'bg-red-500',
                     'text-white',
                   )}
                 >
                   <BarChart3 className="mr-1 h-3 w-3" />
-                  Level {activityData.difficulty}
+                  Level {activityData?.difficulty}
                 </Badge>
               )}
-              {activityData.estimatedDuration && (
+              {activityData?.estimatedDuration && (
                 <Badge variant="outline">
                   <Clock className="mr-1 h-3 w-3" />
-                  {activityData.estimatedDuration} menit
+                  {activityData?.estimatedDuration} menit
                 </Badge>
               )}
             </div>
@@ -187,7 +211,7 @@ export default async function ActivityDetailPage({
             </TabsList>
 
             <TabsContent value="content" className="space-y-6">
-              {activityData.content && (
+              {activityData?.content && (
                 <Card>
                   <CardHeader>
                     <h3 className="flex items-center gap-2 text-lg font-medium">
@@ -199,7 +223,7 @@ export default async function ActivityDetailPage({
                     <div className="prose prose-sm max-w-none">
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: activityData.content,
+                          __html: activityData?.content,
                         }}
                       />
                     </div>
@@ -207,7 +231,7 @@ export default async function ActivityDetailPage({
                 </Card>
               )}
 
-              {activityData.audioUrl && (
+              {activityData?.audioUrl && (
                 <Card>
                   <CardHeader>
                     <h3 className="flex items-center gap-2 text-lg font-medium">
@@ -217,14 +241,14 @@ export default async function ActivityDetailPage({
                   </CardHeader>
                   <CardContent>
                     <audio controls className="w-full">
-                      <source src={activityData.audioUrl} />
+                      <source src={activityData?.audioUrl} />
                       Browser Anda tidak mendukung pemutaran audio.
                     </audio>
                   </CardContent>
                 </Card>
               )}
 
-              {activityData.videoUrl && (
+              {activityData?.videoUrl && (
                 <Card>
                   <CardHeader>
                     <h3 className="flex items-center gap-2 text-lg font-medium">
@@ -234,24 +258,23 @@ export default async function ActivityDetailPage({
                   </CardHeader>
                   <CardContent>
                     <div className="relative aspect-video overflow-hidden rounded-md">
-                      {activityData.videoUrl.includes('youtube') ||
-                      activityData.videoUrl.includes('youtu.be') ? (
+                      {activityData?.videoUrl.includes('youtube') ||
+                      activityData?.videoUrl.includes('youtu.be') ? (
                         <iframe
                           width="100%"
                           height="100%"
-                          src={activityData.videoUrl.replace(
+                          src={activityData?.videoUrl.replace(
                             'watch?v=',
                             'embed/',
                           )}
                           title="YouTube video player"
-                          frameBorder="0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                           className="absolute inset-0"
                         ></iframe>
                       ) : (
                         <video controls className="h-full w-full">
-                          <source src={activityData.videoUrl} />
+                          <source src={activityData?.videoUrl} />
                           Browser Anda tidak mendukung pemutaran video.
                         </video>
                       )}
@@ -271,7 +294,6 @@ export default async function ActivityDetailPage({
                   <CardContent>
                     <ul className="space-y-2">
                       {attachmentUrls.map((attachment: any, index: number) => {
-                        // Handle both object format and string format
                         const url =
                           typeof attachment === 'string'
                             ? attachment
@@ -318,11 +340,11 @@ export default async function ActivityDetailPage({
                   </h3>
                 </CardHeader>
                 <CardContent>
-                  {activityData.instructions ? (
+                  {activityData?.instructions ? (
                     <div className="prose prose-sm max-w-none">
                       <div
                         dangerouslySetInnerHTML={{
-                          __html: activityData.instructions,
+                          __html: activityData?.instructions,
                         }}
                       />
                     </div>
@@ -375,26 +397,26 @@ export default async function ActivityDetailPage({
               <div>
                 <div className="text-sm font-medium">Jenis Keterampilan</div>
                 <div className="text-muted-foreground text-sm capitalize">
-                  {activityData.skill || 'Tidak ditentukan'}
+                  {activityData?.skill || 'Tidak ditentukan'}
                 </div>
               </div>
               <div>
                 <div className="text-sm font-medium">Tipe HOTS</div>
                 <div className="text-muted-foreground text-sm capitalize">
-                  {activityData.hotsType || 'Tidak ditentukan'}
+                  {activityData?.hotsType || 'Tidak ditentukan'}
                 </div>
               </div>
               <div>
                 <div className="text-sm font-medium">Tingkat Kesulitan</div>
                 <div className="text-muted-foreground text-sm">
-                  Level {activityData.difficulty || 'Tidak ditentukan'}
+                  Level {activityData?.difficulty || 'Tidak ditentukan'}
                 </div>
               </div>
               <div>
                 <div className="text-sm font-medium">Estimasi Durasi</div>
                 <div className="text-muted-foreground text-sm">
-                  {activityData.estimatedDuration
-                    ? `${activityData.estimatedDuration} menit`
+                  {activityData?.estimatedDuration
+                    ? `${activityData?.estimatedDuration} menit`
                     : 'Tidak ditentukan'}
                 </div>
               </div>

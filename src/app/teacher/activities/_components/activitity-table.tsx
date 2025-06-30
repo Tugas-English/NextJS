@@ -7,7 +7,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { DataTableSortList } from '@/components/data-table/data-table-sort-list';
 import { DataTableToolbar } from '@/components/data-table/data-table-toolbar';
 import { ActivitiesTableActionBar } from './activitity-table-actions-bar';
-import { Activitie } from '@/db/schema';
+import { Activity } from '@/db/schema';
 import { getActivitiesTableColumns } from './activitity-table-columns';
 import {
   getActivities,
@@ -36,10 +36,10 @@ export function ActivitiesTable({ promises }: ActivitiesTableProps) {
   const router = useRouter();
 
   const [rowAction, setRowAction] =
-    React.useState<DataTableRowAction<Activitie> | null>(null);
+    React.useState<DataTableRowAction<Activity> | null>(null);
 
   const handleRowAction = React.useCallback(
-    (action: DataTableRowAction<Activitie>) => {
+    (action: DataTableRowAction<Activity>) => {
       try {
         if (!action.row?.id) return;
 

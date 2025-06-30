@@ -18,25 +18,29 @@ export const metadata = {
 export default async function StudentModulesPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     perPage?: string;
     search?: string;
     skill?: string | string[];
     hotsType?: string | string[];
     difficulty?: string;
-  };
+  }>;
 }) {
-  const page = searchParams.page ? parseInt(searchParams.page) : 1;
-  const perPage = searchParams.perPage ? parseInt(searchParams.perPage) : 9;
+  const resolvedSearchParams = await searchParams;
 
-  // Parse difficulty range if provided
+  const page = resolvedSearchParams.page
+    ? parseInt(resolvedSearchParams.page)
+    : 1;
+  const perPage = resolvedSearchParams.perPage
+    ? parseInt(resolvedSearchParams.perPage)
+    : 9;
+
   let difficultyRange: number[] | undefined = undefined;
-  if (searchParams.difficulty) {
-    difficultyRange = searchParams.difficulty.split('-').map(Number);
+  if (resolvedSearchParams.difficulty) {
+    difficultyRange = resolvedSearchParams.difficulty.split('-').map(Number);
   }
 
-  // Get filter data
   const [skillCounts, hotsTypeCounts, difficultyRangeData] = await Promise.all([
     getModuleSkillCounts(),
     getModuleHotsTypeCounts(),
@@ -67,21 +71,21 @@ export default async function StudentModulesPage({
             hotsTypeCounts={hotsTypeCounts}
             difficultyRange={difficultyRangeData}
             selectedSkills={
-              searchParams.skill
-                ? Array.isArray(searchParams.skill)
-                  ? searchParams.skill
-                  : [searchParams.skill]
+              resolvedSearchParams.skill
+                ? Array.isArray(resolvedSearchParams.skill)
+                  ? resolvedSearchParams.skill
+                  : [resolvedSearchParams.skill]
                 : []
             }
             selectedHotsTypes={
-              searchParams.hotsType
-                ? Array.isArray(searchParams.hotsType)
-                  ? searchParams.hotsType
-                  : [searchParams.hotsType]
+              resolvedSearchParams.hotsType
+                ? Array.isArray(resolvedSearchParams.hotsType)
+                  ? resolvedSearchParams.hotsType
+                  : [resolvedSearchParams.hotsType]
                 : []
             }
             selectedDifficulty={difficultyRange}
-            search={searchParams.search}
+            search={resolvedSearchParams.search}
           />
         </div>
 
@@ -90,9 +94,9 @@ export default async function StudentModulesPage({
             <ModulesList
               page={page}
               perPage={perPage}
-              search={searchParams.search}
-              skill={searchParams.skill}
-              hotsType={searchParams.hotsType}
+              search={resolvedSearchParams.search}
+              skill={resolvedSearchParams.skill}
+              hotsType={resolvedSearchParams.hotsType}
               difficulty={difficultyRange}
             />
           </Suspense>

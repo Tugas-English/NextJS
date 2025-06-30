@@ -34,33 +34,6 @@ export async function getStudentModules(
       .from(modules)
       .where(eq(modules.isPublished, true));
 
-    if (skill) {
-      const skillArray = Array.isArray(skill) ? skill : [skill];
-      query.where(sql`${modules.skill} IN ${skillArray}`);
-    }
-
-    if (hotsType) {
-      const hotsTypeArray = Array.isArray(hotsType) ? hotsType : [hotsType];
-      query.where(sql`${modules.hotsType} IN ${hotsTypeArray}`);
-    }
-
-    if (difficulty) {
-      if (Array.isArray(difficulty) && difficulty.length === 2) {
-        query.where(
-          sql`${modules.difficulty} BETWEEN ${difficulty[0]} AND ${difficulty[1]}`,
-        );
-      } else {
-        const difficultyValue = Array.isArray(difficulty)
-          ? difficulty[0]
-          : difficulty;
-        query.where(eq(modules.difficulty, difficultyValue));
-      }
-    }
-
-    if (search) {
-      query.where(sql`${modules.title} ILIKE ${`%${search}%`}`);
-    }
-
     const [modulesResult, countResult] = await Promise.all([
       query
         .orderBy(sql`${modules.createdAt} DESC`)
@@ -72,7 +45,6 @@ export async function getStudentModules(
         .where(eq(modules.isPublished, true)),
     ]);
 
-    // Ambil aktivitas untuk setiap modul
     const moduleIds = modulesResult.map((module) => module.id);
 
     const moduleActivitiesData =
@@ -84,7 +56,6 @@ export async function getStudentModules(
             .orderBy(moduleActivities.order)
         : [];
 
-    // Ambil detail aktivitas
     const activityIds = moduleActivitiesData.map((ma) => ma.activityId);
 
     const activitiesData =

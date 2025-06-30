@@ -1,6 +1,6 @@
 'use client';
 
-import { Activitie } from '@/db/schema';
+import { Activity } from '@/db/schema';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -20,12 +20,12 @@ interface GetActivitiesTableColumnsProps {
   skillCounts: Record<string, number>;
   hotsTypeCounts: Record<string, number>;
   difficultyRange: { min: number; max: number };
-  onRowAction: (action: DataTableRowAction<Activitie>) => void;
+  onRowAction: (action: DataTableRowAction<Activity>) => void;
 }
 
 export function getActivitiesTableColumns({
   onRowAction,
-}: GetActivitiesTableColumnsProps): ColumnDef<Activitie>[] {
+}: GetActivitiesTableColumnsProps): ColumnDef<Activity>[] {
   return [
     {
       id: 'select',
@@ -55,7 +55,7 @@ export function getActivitiesTableColumns({
     {
       id: 'title',
       accessorKey: 'title',
-      header: ({ column }: { column: Column<Activitie, unknown> }) => (
+      header: ({ column }: { column: Column<Activity, unknown> }) => (
         <DataTableColumnHeader column={column} title="Judul" />
       ),
       cell: ({ row }) => (
@@ -71,7 +71,7 @@ export function getActivitiesTableColumns({
     {
       id: 'skill',
       accessorKey: 'skill',
-      header: ({ column }: { column: Column<Activitie, unknown> }) => (
+      header: ({ column }: { column: Column<Activity, unknown> }) => (
         <DataTableColumnHeader column={column} title="Skill" />
       ),
       cell: ({ row }) => {
@@ -97,7 +97,7 @@ export function getActivitiesTableColumns({
     {
       id: 'hotsType',
       accessorKey: 'hotsType',
-      header: ({ column }: { column: Column<Activitie, unknown> }) => (
+      header: ({ column }: { column: Column<Activity, unknown> }) => (
         <DataTableColumnHeader column={column} title="Tipe HOTS" />
       ),
       cell: ({ row }) => {
@@ -124,7 +124,7 @@ export function getActivitiesTableColumns({
     {
       id: 'difficulty',
       accessorKey: 'difficulty',
-      header: ({ column }: { column: Column<Activitie, unknown> }) => (
+      header: ({ column }: { column: Column<Activity, unknown> }) => (
         <DataTableColumnHeader column={column} title="Kesulitan" />
       ),
       cell: ({ row }) => {
@@ -152,7 +152,7 @@ export function getActivitiesTableColumns({
     {
       id: 'isPublished',
       accessorKey: 'isPublished',
-      header: ({ column }: { column: Column<Activitie, unknown> }) => (
+      header: ({ column }: { column: Column<Activity, unknown> }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row }) => {

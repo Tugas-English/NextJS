@@ -1,6 +1,6 @@
 'use client';
 
-import { type Activitie } from '@/db/schema';
+import { type Activity } from '@/db/schema';
 import type { Table } from '@tanstack/react-table';
 import { Download, Trash2 } from 'lucide-react';
 import * as React from 'react';
@@ -24,7 +24,7 @@ const actions = [
 type Action = (typeof actions)[number];
 
 interface ActivitiesTableActionProps {
-  table: Table<Activitie>;
+  table: Table<Activity>;
 }
 
 export function ActivitiesTableActionBar({

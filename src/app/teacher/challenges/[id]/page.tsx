@@ -36,18 +36,18 @@ import {
   Edit,
   FileText,
   HelpCircle,
+  MessageSquare,
   MoreHorizontal,
   Search,
   Trash2,
   Trophy,
   Users,
-  X,
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
 
-// Data dummy untuk demo
 const challenge = {
   id: '1',
   title: 'Tulis Surat Opini tentang AI di Masa Depan',
@@ -191,23 +191,23 @@ const discussionPosts = [
   },
 ];
 
+interface ChallengeDetailPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
 export default function ChallengeDetailPage({
   params,
-}: {
-  params: { id: string };
-}) {
+}: ChallengeDetailPageProps) {
   const [searchParticipant, setSearchParticipant] = useState('');
 
-  // Untuk demo, kita gunakan challenge data sesuai status
   const challengeData =
-    challenge.status === 'completed' ? completedChallenge : challenge;
+    challenge.status === 'active' ? completedChallenge : challenge;
 
-  // Filter partisipan berdasarkan pencarian
   const filteredParticipants = participants.filter((participant) =>
     participant.name.toLowerCase().includes(searchParticipant.toLowerCase()),
   );
 
-  // Hitung persentase pengumpulan
   const submissionPercentage =
     (challengeData.submissions / challengeData.participants) * 100;
   const participantPercentage =
@@ -256,7 +256,7 @@ export default function ChallengeDetailPage({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {challengeData.status === 'upcoming' && (
+                {challengeData.status === 'active' && (
                   <DropdownMenuItem>Mulai Tantangan Sekarang</DropdownMenuItem>
                 )}
                 {challengeData.status === 'active' && (
@@ -294,7 +294,7 @@ export default function ChallengeDetailPage({
                   Status
                 </div>
                 <div>
-                  {challengeData.status === 'upcoming' && (
+                  {challengeData.status === 'active' && (
                     <Badge
                       variant="outline"
                       className="flex w-fit items-center gap-1"

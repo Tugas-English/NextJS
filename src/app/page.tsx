@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -23,8 +23,11 @@ import {
   FileText,
   Settings,
 } from 'lucide-react';
+import { getServerSession } from '@/lib/session';
+import Link from 'next/link';
 
 export default async function HomePage() {
+  const session = await getServerSession();
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50">
       <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/80">
@@ -51,10 +54,33 @@ export default async function HomePage() {
             </a>
           </nav>
           <div className="flex items-center gap-4">
-            <Button variant="outline">Masuk</Button>
-            <Button className="bg-blue-600 text-white hover:bg-blue-700">
-              Daftar Gratis
-            </Button>
+            {session?.user && (
+              <Link
+                href={session?.user.role === 'student' ? '/student' : 'teacher'}
+                className={buttonVariants({ variant: 'outline' })}
+              >
+                Dashboard
+              </Link>
+            )}
+            {!session?.user && (
+              <>
+                <Link
+                  href="/sign-in"
+                  className={buttonVariants({ variant: 'outline' })}
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href={'/sign-up'}
+                  className={buttonVariants({
+                    variant: 'default',
+                    className: 'bg-blue-600 text-white hover:bg-blue-700',
+                  })}
+                >
+                  Daftar Gratis
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>

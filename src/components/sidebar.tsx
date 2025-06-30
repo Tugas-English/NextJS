@@ -1,28 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  FileText,
-  LifeBuoy,
-  MessageSquare,
-  Award,
-  BarChart2,
-  BookMarked,
-  Sparkles,
-  Settings,
-  LineChart,
-  BrainCircuit,
-  Clock,
-  CheckCircle,
-  Gauge,
-  FileEdit,
-  Repeat,
-  Filter,
-  Brain,
-  ChevronRight,
-  MessageCircle,
-  Plus,
-} from 'lucide-react';
+import { BrainCircuit, ChevronRight } from 'lucide-react';
 
 import {
   Sidebar,
@@ -41,175 +20,23 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { User } from '@/lib/auth';
-import { SidebarFooterUser } from '@/app/teacher/_components/sidebar-footer';
+import { SidebarFooterUser } from '@/components/ui/sidebar-footer';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { NavItem, SidebarNavProps } from '@/types/nav';
 
-type BadgeVariant = 'default' | 'destructive' | 'outline';
-
-interface NavItem {
-  title: string;
-  url: string;
-  icon: React.ElementType;
-  isActive?: boolean;
-  badge?: string | { text: string; variant: BadgeVariant };
-  items?: Array<{
-    title: string;
-    url: string;
-    icon?: React.ElementType;
-    count?: number;
-  }>;
-}
-
-const data = {
-  navMain: [
-    {
-      title: 'Dashboard',
-      url: '/student',
-      icon: BarChart2,
-      isActive: true,
-    },
-    {
-      title: 'Kemajuan Belajar',
-      url: '/student/progress',
-      icon: LineChart,
-      badge: '14%',
-      items: [
-        {
-          title: 'Statistik HOTS',
-          url: '/student/progress/hots',
-          icon: Brain,
-        },
-        {
-          title: 'Pencapaian',
-          url: '/student/progress/achievements',
-          icon: Award,
-        },
-        {
-          title: 'Riwayat Aktivitas',
-          url: '/student/progress/history',
-          icon: Clock,
-        },
-      ],
-    },
-    {
-      title: 'Tugas',
-      url: '/student/assignments',
-      icon: FileText,
-      badge: {
-        text: '5',
-        variant: 'destructive' as const,
-      },
-      items: [
-        {
-          title: 'Tugas Aktif',
-          url: '/student/assignments/active',
-          icon: Clock,
-          count: 5,
-        },
-        {
-          title: 'Tugas Selesai',
-          url: '/student/assignments/completed',
-          icon: CheckCircle,
-        },
-        {
-          title: 'Perlu Revisi',
-          url: '/student/assignments/revisions',
-          icon: Repeat,
-          count: 2,
-        },
-      ],
-    },
-    {
-      title: 'Modul Pembelajaran',
-      url: '/student/modules',
-      icon: BookMarked,
-      badge: '12',
-      items: [
-        {
-          title: 'Semua Modul',
-          url: '/student/modules',
-          icon: BookMarked,
-        },
-        {
-          title: 'Filter HOTS',
-          url: '/student/modules/filter',
-          icon: Filter,
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: 'Forum Diskusi',
-      url: '/student/discussions',
-      icon: MessageSquare,
-      badge: {
-        text: 'Baru',
-        variant: 'default' as const,
-      },
-      items: [
-        {
-          title: 'Semua Diskusi',
-          url: '/student/discussions',
-          icon: MessageCircle,
-        },
-        {
-          title: 'Diskusi Saya',
-          url: '/student/discussions/mine',
-          icon: FileEdit,
-        },
-        {
-          title: 'Buat Diskusi',
-          url: '/student/discussions/create',
-          icon: Plus,
-        },
-      ],
-    },
-    {
-      title: 'Tantangan Mingguan',
-      url: '/student/challenges',
-      icon: Award,
-      badge: '3',
-      items: [
-        {
-          title: 'Tantangan Aktif',
-          url: '/student/challenges/active',
-          icon: Sparkles,
-        },
-        {
-          title: 'Leaderboard',
-          url: '/student/challenges/leaderboard',
-          icon: Gauge,
-        },
-        {
-          title: 'Riwayat',
-          url: '/student/challenges/history',
-          icon: Clock,
-        },
-      ],
-    },
-    {
-      title: 'Pengaturan',
-      url: '/student/settings',
-      icon: Settings,
-    },
-    {
-      title: 'Bantuan',
-      url: '/student/support',
-      icon: LifeBuoy,
-    },
-  ],
-};
-
-export function StudentSidebar({
+export function AppSidebar({
   user,
+  data,
+  sidebarFor,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user?: User;
+  data: SidebarNavProps;
+  sidebarFor: 'Teacher' | 'Student';
 }) {
   const [mounted, setMounted] = React.useState(false);
 
@@ -232,7 +59,7 @@ export function StudentSidebar({
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="text-base font-semibold">HOTS English</span>
                   <span className="text-muted-foreground text-xs">
-                    Portal Siswa
+                    Portal {sidebarFor}
                   </span>
                 </div>
               </Link>

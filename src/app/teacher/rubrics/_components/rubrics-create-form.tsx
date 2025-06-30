@@ -114,7 +114,7 @@ export default function CreateRubricsForm({ user }: CreateRubricsFormProps) {
       return;
     }
     try {
-      const { rubric, error } = await createRubric(data, user?.id);
+      const { rubric, error } = await createRubric(data);
 
       if (error || !rubric) {
         toast.error(error || 'Gagal membuat aktivitas');

@@ -27,42 +27,31 @@ import {
 } from 'lucide-react';
 import { cn, safeJsonParse } from '@/lib/utils';
 import Link from 'next/link';
-import { format } from 'date-fns';
 
-import EvaluationForm from './_components/evaluation-form';
+import EvaluationForm from '../../../_components/evaluation-form';
+import { RoleRestricted } from '@/components/restricted-access';
 
 interface SubmissionDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
     submissionId: string;
-  };
+  }>;
 }
 
 export default async function SubmissionDetailPage({
   params,
 }: SubmissionDetailPageProps) {
-  const { id, submissionId } = params;
+  const { id, submissionId } = await params;
   const session = await getServerSession();
 
   if (!session?.user) {
     return redirect('/login');
   }
 
-  // Cek apakah user adalah guru
   if (session.user.role !== 'teacher' && session.user.role !== 'admin') {
-    return (
-      <div className="container py-12">
-        <Alert variant="destructive">
-          <AlertTitle>Akses Ditolak</AlertTitle>
-          <AlertDescription>
-            Anda tidak memiliki izin untuk mengakses halaman ini.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return <RoleRestricted />;
   }
 
-  // Ambil detail tugas
   const assignment = await db.query.assignments.findFirst({
     where: eq(assignments.id, id),
   });
@@ -71,7 +60,6 @@ export default async function SubmissionDetailPage({
     notFound();
   }
 
-  // Ambil detail submission
   const submission = await db.query.submissions.findFirst({
     where: eq(submissions.id, submissionId),
   });
@@ -80,14 +68,12 @@ export default async function SubmissionDetailPage({
     notFound();
   }
 
-  // Ambil detail aktivitas terkait
   const activity = assignment.activityId
     ? await db.query.activities.findFirst({
         where: eq(activities.id, assignment.activityId),
       })
     : null;
 
-  // Ambil rubrik penilaian
   const rubric = await db.query.rubrics.findFirst({
     where: eq(rubrics.id, assignment.rubricId),
   });
@@ -105,7 +91,6 @@ export default async function SubmissionDetailPage({
     );
   }
 
-  // Ambil informasi siswa
   const student = await db
     .select({
       id: user.id,
@@ -128,17 +113,14 @@ export default async function SubmissionDetailPage({
     );
   }
 
-  // Ambil evaluasi jika sudah ada
   const existingEvaluation = await db.query.evaluations.findFirst({
     where: eq(evaluations.submissionId, submissionId),
   });
 
-  // Parse data JSON
   const rubricCriteria = safeJsonParse(rubric.criteria as string, {});
   const submissionChecklist = safeJsonParse(submission.checklist as string, []);
   const documentUrls = safeJsonParse(submission.documentUrls as string, []);
 
-  // Parse data evaluasi jika ada
   const evaluationScores = existingEvaluation?.scores
     ? safeJsonParse(existingEvaluation.scores as string, {})
     : {};
@@ -147,7 +129,6 @@ export default async function SubmissionDetailPage({
     ? safeJsonParse(existingEvaluation.criteriaFeedback as string, {})
     : {};
 
-  // Tentukan status submission
   const submittedAt = submission.submittedAt
     ? new Date(submission.submittedAt)
     : null;

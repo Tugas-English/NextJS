@@ -102,14 +102,12 @@ const rubricData = {
   ],
 };
 
-// Interface untuk kriteria level yang akan diedit
 interface EditableCriterionLevel {
   value: string;
   description: string;
   score: number;
 }
 
-// Interface untuk kriteria yang akan diedit
 interface EditableCriterion {
   id: string;
   name: string;
@@ -118,11 +116,7 @@ interface EditableCriterion {
   levels: EditableCriterionLevel[];
 }
 
-export default function RubricDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function RubricDetailPage() {
   const [rubric, setRubric] = useState(rubricData);
   const [editMode, setEditMode] = useState(false);
   const [editedRubric, setEditedRubric] = useState({
@@ -136,13 +130,6 @@ export default function RubricDetailPage({
   const [currentEditingCriterion, setCurrentEditingCriterion] =
     useState<EditableCriterion | null>(null);
   const [deleteConfirmDialogOpen, setDeleteConfirmDialogOpen] = useState(false);
-
-  useEffect(() => {
-    // In a real app, fetch the rubric data based on params.id
-    console.log('Fetching rubric with ID:', params.id);
-    // Dummy implementation - in real app, this would be an API call
-    // fetchRubric(params.id).then(setRubric);
-  }, [params.id]);
 
   const handleEditRubric = () => {
     setEditMode(true);
@@ -159,9 +146,7 @@ export default function RubricDetailPage({
   };
 
   const handleSaveRubric = () => {
-    // In a real app, call API to update the rubric
     console.log('Saving rubric:', editedRubric);
-
     setRubric({
       ...rubric,
       ...editedRubric,
@@ -180,7 +165,6 @@ export default function RubricDetailPage({
   const handleSaveCriterion = () => {
     if (!currentEditingCriterion) return;
 
-    // In a real app, call API to update the criterion
     console.log('Saving criterion:', currentEditingCriterion);
 
     setRubric({
@@ -220,7 +204,6 @@ export default function RubricDetailPage({
       return;
     }
 
-    // In a real app, call API to delete the criterion
     console.log('Deleting criterion:', criterionId);
 
     setRubric({
@@ -253,11 +236,9 @@ export default function RubricDetailPage({
   };
 
   const confirmDeleteRubric = () => {
-    // In a real app, call API to delete the rubric
     console.log('Deleting rubric:', rubric.id);
 
     setDeleteConfirmDialogOpen(false);
-    // In a real app, this would redirect to the rubrics list page
     alert('Rubrik berhasil dihapus!');
   };
 
@@ -502,8 +483,6 @@ export default function RubricDetailPage({
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Dialog untuk edit/tambah kriteria */}
       <Dialog
         open={editCriterionDialogOpen}
         onOpenChange={setEditCriterionDialogOpen}
@@ -662,8 +641,6 @@ export default function RubricDetailPage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Dialog konfirmasi hapus */}
       <Dialog
         open={deleteConfirmDialogOpen}
         onOpenChange={setDeleteConfirmDialogOpen}

@@ -1,11 +1,3 @@
-'use server';
-
-import { db } from '@/db';
-import {
-  modules,
-  moduleActivities,
-  activities as activitiesTable,
-} from '@/db/schema';
 import { notFound } from 'next/navigation';
 import { getServerSession } from '@/lib/session';
 import { Button } from '@/components/ui/button';
@@ -43,149 +35,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { eq, desc, asc, sql } from 'drizzle-orm';
+import {
+  getModuleById,
+  getModuleActivities,
+  getStudentProgress,
+} from '@/lib/actions/modules';
 
-// Fungsi untuk mendapatkan detail modul berdasarkan ID
-export async function getModuleById(moduleId: string) {
-  try {
-    const moduleData = await db.query.modules.findFirst({
-      where: eq(modules.id, moduleId),
-      with: {
-        creator: {
-          columns: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    return moduleData;
-  } catch (error) {
-    console.error('Error fetching module:', error);
-    return null;
-  }
-}
-
-// Fungsi untuk mendapatkan aktivitas dalam modul
-export async function getModuleActivities(moduleId: string) {
-  try {
-    const moduleActivitiesData = await db
-      .select({
-        id: moduleActivities.id,
-        activityId: moduleActivities.activityId,
-        order: moduleActivities.order,
-        isRequired: moduleActivities.isRequired,
-        title: activitiesTable.title,
-        skill: activitiesTable.skill,
-        hotsType: activitiesTable.hotsType,
-        difficulty: activitiesTable.difficulty,
-        estimatedDuration: activitiesTable.estimatedDuration,
-      })
-      .from(moduleActivities)
-      .innerJoin(
-        activitiesTable,
-        eq(moduleActivities.activityId, activitiesTable.id),
-      )
-      .where(eq(moduleActivities.moduleId, moduleId))
-      .orderBy(asc(moduleActivities.order));
-
-    return moduleActivitiesData;
-  } catch (error) {
-    console.error('Error fetching module activities:', error);
-    return [];
-  }
-}
-
-// Fungsi untuk mendapatkan aktivitas yang tersedia untuk ditambahkan ke modul
-export async function getAvailableActivities(moduleId: string) {
-  try {
-    // Dapatkan ID aktivitas yang sudah ada di modul
-    const existingActivityIds = await db
-      .select({ activityId: moduleActivities.activityId })
-      .from(moduleActivities)
-      .where(eq(moduleActivities.moduleId, moduleId));
-
-    const existingIds = existingActivityIds.map((item) => item.activityId);
-
-    // Dapatkan aktivitas yang belum ada di modul
-    const availableActivities = await db.query.activities.findMany({
-      where:
-        existingIds.length > 0
-          ? sql`${activitiesTable.id} NOT IN ${existingIds}`
-          : undefined,
-      columns: {
-        id: true,
-        title: true,
-        skill: true,
-        hotsType: true,
-        difficulty: true,
-        estimatedDuration: true,
-      },
-      orderBy: [desc(activitiesTable.createdAt)],
-    });
-
-    return availableActivities;
-  } catch (error) {
-    console.error('Error fetching available activities:', error);
-    return [];
-  }
-}
-
-// Fungsi untuk mendapatkan data kemajuan siswa dalam modul
-export async function getStudentProgress(moduleId: string) {
-  try {
-    // Fungsi ini akan diimplementasikan setelah tabel progress siswa dibuat
-    // Untuk saat ini, kita menggunakan data dummy
-    return [
-      {
-        id: '1',
-        name: 'Andi Pratama',
-        progress: 100,
-        completedActivities: 5,
-        totalActivities: 5,
-        averageScore: 92,
-      },
-      {
-        id: '2',
-        name: 'Budi Santoso',
-        progress: 80,
-        completedActivities: 4,
-        totalActivities: 5,
-        averageScore: 85,
-      },
-      {
-        id: '3',
-        name: 'Citra Dewi',
-        progress: 100,
-        completedActivities: 5,
-        totalActivities: 5,
-        averageScore: 90,
-      },
-      {
-        id: '4',
-        name: 'Deni Kurniawan',
-        progress: 60,
-        completedActivities: 3,
-        totalActivities: 5,
-        averageScore: 78,
-      },
-      {
-        id: '5',
-        name: 'Eka Putri',
-        progress: 40,
-        completedActivities: 2,
-        totalActivities: 5,
-        averageScore: 82,
-      },
-    ];
-  } catch (error) {
-    console.error('Error fetching student progress:', error);
-    return [];
-  }
-}
-
-// Komponen untuk menampilkan detail modul
 async function ModuleDetail({ moduleId }: { moduleId: string }) {
   const moduleData = await getModuleById(moduleId);
 
@@ -321,7 +176,6 @@ async function ModuleDetail({ moduleId }: { moduleId: string }) {
   );
 }
 
-// Komponen untuk menampilkan statistik modul
 async function ModuleStats({ moduleId }: { moduleId: string }) {
   const activities = await getModuleActivities(moduleId);
   const studentProgress = await getStudentProgress(moduleId);
@@ -384,7 +238,6 @@ async function ModuleStats({ moduleId }: { moduleId: string }) {
   );
 }
 
-// Komponen untuk menampilkan tab aktivitas
 async function ActivitiesTab({ moduleId }: { moduleId: string }) {
   const activities = await getModuleActivities(moduleId);
 
@@ -500,7 +353,6 @@ async function ActivitiesTab({ moduleId }: { moduleId: string }) {
   );
 }
 
-// Komponen untuk menampilkan tab siswa
 async function StudentsTab({ moduleId }: { moduleId: string }) {
   const studentProgress = await getStudentProgress(moduleId);
 
@@ -576,12 +428,16 @@ async function StudentsTab({ moduleId }: { moduleId: string }) {
   );
 }
 
-// Halaman utama
+interface ModuleDetailPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
 export default async function ModuleDetailPage({
   params,
-}: {
-  params: { id: string };
-}) {
+}: ModuleDetailPageProps) {
+  const { id } = await params;
   const session = await getServerSession();
 
   if (!session?.user) {
@@ -601,7 +457,7 @@ export default async function ModuleDetailPage({
   return (
     <div className="space-y-6">
       <Suspense fallback={<div>Memuat detail modul...</div>}>
-        <ModuleDetail moduleId={params.id} />
+        <ModuleDetail moduleId={id} />
       </Suspense>
     </div>
   );

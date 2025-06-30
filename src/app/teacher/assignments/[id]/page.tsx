@@ -1,5 +1,3 @@
-'use server';
-
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,7 +32,6 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { formatDate } from 'date-fns';
 
-// Fungsi untuk mendapatkan detail tugas dengan data terkait
 async function getAssignmentWithDetails(assignmentId: string) {
   try {
     const assignment = await db.query.assignments.findFirst({
@@ -60,7 +57,6 @@ async function getAssignmentWithDetails(assignmentId: string) {
       return null;
     }
 
-    // Ambil data aktivitas jika ada
     let activityData = null;
     if (assignment.activityId) {
       activityData = await db.query.activities.findFirst({
@@ -72,7 +68,6 @@ async function getAssignmentWithDetails(assignmentId: string) {
       });
     }
 
-    // Ambil data modul jika ada
     let moduleData = null;
     if (assignment.moduleId) {
       moduleData = await db.query.modules.findFirst({
@@ -95,7 +90,6 @@ async function getAssignmentWithDetails(assignmentId: string) {
   }
 }
 
-// Fungsi untuk mendapatkan data submission untuk tugas
 async function getSubmissionsByAssignmentId(assignmentId: string) {
   try {
     const submissionData = await db
@@ -119,7 +113,6 @@ async function getSubmissionsByAssignmentId(assignmentId: string) {
       )
       .orderBy(desc(submissions.submittedAt));
 
-    // Format data untuk tampilan
     return submissionData.map((submission) => ({
       id: submission.id,
       studentId: submission.studentId,
@@ -137,7 +130,6 @@ async function getSubmissionsByAssignmentId(assignmentId: string) {
   }
 }
 
-// Fungsi helper untuk menghitung skor total dari data evaluasi
 function calculateTotalScore(scores: any) {
   if (!scores || typeof scores !== 'object') return 0;
 
@@ -151,7 +143,6 @@ function calculateTotalScore(scores: any) {
   return totalScore;
 }
 
-// Komponen untuk menampilkan detail tugas
 async function AssignmentDetail({ assignmentId }: { assignmentId: string }) {
   const assignment = await getAssignmentWithDetails(assignmentId);
 
@@ -323,7 +314,6 @@ async function SubmissionStats({ assignmentId }: { assignmentId: string }) {
   );
 }
 
-// Komponen untuk menampilkan daftar submission
 async function SubmissionsList({ assignmentId }: { assignmentId: string }) {
   const submissions = await getSubmissionsByAssignmentId(assignmentId);
   const assignment = await getAssignmentWithDetails(assignmentId);
@@ -410,12 +400,16 @@ async function SubmissionsList({ assignmentId }: { assignmentId: string }) {
   );
 }
 
-// Halaman utama
+interface AssignmentDetailPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
 export default async function AssignmentDetailPage({
   params,
-}: {
-  params: { id: string };
-}) {
+}: AssignmentDetailPageProps) {
+  const { id } = await params;
   const session = await getServerSession();
 
   if (!session?.user) {
@@ -435,21 +429,21 @@ export default async function AssignmentDetailPage({
   return (
     <div className="space-y-6">
       <Suspense fallback={<div>Memuat detail tugas...</div>}>
-        <AssignmentDetail assignmentId={params.id} />
+        <AssignmentDetail assignmentId={id} />
       </Suspense>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Suspense fallback={<div>Memuat informasi tugas...</div>}>
-          <AssignmentInfo assignmentId={params.id} />
+          <AssignmentInfo assignmentId={id} />
         </Suspense>
 
         <Suspense fallback={<div>Memuat statistik pengumpulan...</div>}>
-          <SubmissionStats assignmentId={params.id} />
+          <SubmissionStats assignmentId={id} />
         </Suspense>
       </div>
 
       <Suspense fallback={<div>Memuat daftar pengumpulan...</div>}>
-        <SubmissionsList assignmentId={params.id} />
+        <SubmissionsList assignmentId={id} />
       </Suspense>
     </div>
   );

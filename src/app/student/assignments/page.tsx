@@ -2,18 +2,16 @@ import { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Clock, CheckCircle, Repeat } from 'lucide-react';
-import AssignmentsList from './_components/assignments-list';
 import AssignmentsFilter from './_components/assignments-filter';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Tugas | HOTS English',
   description: 'Daftar tugas yang perlu dikerjakan dan diselesaikan',
 };
 
-export default async function StudentAssignmentsPage({
-  searchParams,
-}: {
-  searchParams: {
+interface StudentAssignmentsPageProps {
+  searchParams: Promise<{
     page?: string;
     perPage?: string;
     search?: string;
@@ -22,16 +20,20 @@ export default async function StudentAssignmentsPage({
     hotsType?: string | string[];
     difficulty?: string;
     tab?: string;
-  };
-}) {
-  const page = searchParams.page ? parseInt(searchParams.page) : 1;
-  const perPage = searchParams.perPage ? parseInt(searchParams.perPage) : 10;
-  const status = searchParams.status || 'active';
-  const tab = searchParams.tab || 'active';
+  }>;
+}
+
+export default async function StudentAssignmentsPage({
+  searchParams,
+}: StudentAssignmentsPageProps) {
+  const resolvedSearchParams = await searchParams;
+
+  const status = resolvedSearchParams.status || 'active';
+  const tab = resolvedSearchParams.tab || 'active';
 
   let difficultyRange: number[] | undefined = undefined;
-  if (searchParams.difficulty) {
-    difficultyRange = searchParams.difficulty.split('-').map(Number);
+  if (resolvedSearchParams.difficulty) {
+    difficultyRange = resolvedSearchParams.difficulty.split('-').map(Number);
   }
 
   return (
@@ -50,50 +52,50 @@ export default async function StudentAssignmentsPage({
       <Tabs defaultValue={tab} className="w-full">
         <TabsList className="mb-8">
           <TabsTrigger value="active" asChild>
-            <a
+            <Link
               href="/student/assignments?tab=active"
               className="flex items-center gap-2"
             >
               <Clock className="h-4 w-4" />
               Tugas Aktif
-            </a>
+            </Link>
           </TabsTrigger>
           <TabsTrigger value="completed" asChild>
-            <a
+            <Link
               href="/student/assignments?tab=completed"
               className="flex items-center gap-2"
             >
               <CheckCircle className="h-4 w-4" />
               Tugas Selesai
-            </a>
+            </Link>
           </TabsTrigger>
           <TabsTrigger value="revisions" asChild>
-            <a
+            <Link
               href="/student/assignments?tab=revisions"
               className="flex items-center gap-2"
             >
               <Repeat className="h-4 w-4" />
               Perlu Revisi
-            </a>
+            </Link>
           </TabsTrigger>
         </TabsList>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           <div className="lg:col-span-1">
             <AssignmentsFilter
-              search={searchParams.search}
+              search={resolvedSearchParams.search}
               skill={
-                searchParams.skill
-                  ? Array.isArray(searchParams.skill)
-                    ? searchParams.skill
-                    : [searchParams.skill]
+                resolvedSearchParams.skill
+                  ? Array.isArray(resolvedSearchParams.skill)
+                    ? resolvedSearchParams.skill
+                    : [resolvedSearchParams.skill]
                   : []
               }
               hotsType={
-                searchParams.hotsType
-                  ? Array.isArray(searchParams.hotsType)
-                    ? searchParams.hotsType
-                    : [searchParams.hotsType]
+                resolvedSearchParams.hotsType
+                  ? Array.isArray(resolvedSearchParams.hotsType)
+                    ? resolvedSearchParams.hotsType
+                    : [resolvedSearchParams.hotsType]
                   : []
               }
               difficulty={difficultyRange}
@@ -104,45 +106,15 @@ export default async function StudentAssignmentsPage({
 
           <div className="lg:col-span-3">
             <TabsContent value="active" className="mt-0">
-              <Suspense fallback={<AssignmentsListSkeleton />}>
-                <AssignmentsList
-                  page={page}
-                  perPage={perPage}
-                  search={searchParams.search}
-                  skill={searchParams.skill}
-                  hotsType={searchParams.hotsType}
-                  difficulty={difficultyRange}
-                  status="active"
-                />
-              </Suspense>
+              <Suspense fallback={<AssignmentsListSkeleton />}></Suspense>
             </TabsContent>
 
             <TabsContent value="completed" className="mt-0">
-              <Suspense fallback={<AssignmentsListSkeleton />}>
-                <AssignmentsList
-                  page={page}
-                  perPage={perPage}
-                  search={searchParams.search}
-                  skill={searchParams.skill}
-                  hotsType={searchParams.hotsType}
-                  difficulty={difficultyRange}
-                  status="completed"
-                />
-              </Suspense>
+              <Suspense fallback={<AssignmentsListSkeleton />}></Suspense>
             </TabsContent>
 
             <TabsContent value="revisions" className="mt-0">
-              <Suspense fallback={<AssignmentsListSkeleton />}>
-                <AssignmentsList
-                  page={page}
-                  perPage={perPage}
-                  search={searchParams.search}
-                  skill={searchParams.skill}
-                  hotsType={searchParams.hotsType}
-                  difficulty={difficultyRange}
-                  status="revision"
-                />
-              </Suspense>
+              <Suspense fallback={<AssignmentsListSkeleton />}></Suspense>
             </TabsContent>
           </div>
         </div>

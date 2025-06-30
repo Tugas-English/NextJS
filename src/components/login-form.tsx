@@ -50,11 +50,11 @@ export function LoginForm({
       });
 
       const userRole = result.data?.user;
-      console.log('User role:', userRole);
       if (result.error) {
         toast.error(`${result.error.message}` || 'Login Gagal');
       } else {
         toast.success(`Login Berhasil`);
+        router.push('/');
       }
     } catch (err) {
       const errorMessage =
@@ -72,7 +72,7 @@ export function LoginForm({
     try {
       await signIn.social({
         provider: 'google',
-        callbackURL: '/dashboard',
+        callbackURL: '/',
       });
     } catch (error) {
       console.error('Google login error:', error);

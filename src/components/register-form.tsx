@@ -26,7 +26,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { RegisterInput, registerSchema } from '@/lib/schemas/auth';
-import { RegisterAction } from '@/lib/actions/auth';
 import { useRouter } from 'next/navigation';
 import { signUp } from '@/lib/auth-client';
 

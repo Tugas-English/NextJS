@@ -12,7 +12,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ReactNode } from 'react';
 import { getServerSession } from '@/lib/session';
-import { TeacherSidebar } from './_components/sidebar';
+import { TeacherNavigations } from '@/config/navigation';
+import { AppSidebar } from '@/components/sidebar';
 
 export default async function TeacherLayout({
   children,
@@ -22,7 +23,11 @@ export default async function TeacherLayout({
   const session = await getServerSession();
   return (
     <SidebarProvider>
-      <TeacherSidebar user={session?.user} />
+      <AppSidebar
+        user={session?.user}
+        data={TeacherNavigations}
+        sidebarFor="Teacher"
+      />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center justify-between border-b px-4 transition-[width,height] ease-linear">
           <div className="flex items-center gap-2">
